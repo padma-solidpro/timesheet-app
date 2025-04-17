@@ -1,0 +1,35 @@
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Client</th>
+            <th>Project</th>
+            <th>Budget</th>
+            <th>Spending</th>
+            <th>Hours Worked</th>
+            <th>Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for project in project_cost_data %}
+        <tr>
+            <td>{{ project.client }}</td>
+            <td>{{ project.project }}</td>
+            <td>{{ project.budget }}</td>
+            <td>
+                <div class="progress">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: {{ project.utilization }}%">
+                        {{ project.utilization }}%
+                    </div>
+                </div>
+            </td>
+            <td>{{ project.hours }}</td>
+            <td>{{ project.cost|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">No project data available.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

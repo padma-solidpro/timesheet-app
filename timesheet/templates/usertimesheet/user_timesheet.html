@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Timesheet Entry</h2>
+    {% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+    {% endif %}
+    <form method="POST" hx-post="{% url 'usertimesheet' %}" hx-target="#recentEntries" hx-swap="outerHTML">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="employee_id" class="form-label">Select Employee</label>
+            <select name="employee_id" id="employee_id" class="form-select w-50"
+                    hx-get="{% url 'get_project_row' %}" 
+                    hx-target="#projectRowsContainer"
+                    hx-include="[name='employee_id']"
+                    hx-swap="innerHTML">
+                <option value="">Select Employee</option>
+                {% for emp in employee_list %}
+                    <option value="{{ emp.id }}">{{ emp.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="projectRowsContainer"></div>
+
+        <div class="mt-3 d-flex gap-3">
+            <button class="btn btn-outline-primary" 
+                    type="button" 
+                    hx-get="{% url 'get_project_row' %}?add=1"
+                    hx-target="#projectRowsContainer"
+                    hx-include="[name='employee_id']"
+                    hx-swap="beforeend">
+                Add Project
+            </button>
+
+            <button class="btn btn-success" type="submit">Save Timesheet</button>
+        </div>
+    </form>
+
+    <hr class="my-5" />
+    <div id="recentEntries">
+        {% include 'usertimesheet/recent_entries.html' %}
+    </div>
+</div>
+{% endblock %}

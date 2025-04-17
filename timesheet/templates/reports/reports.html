@@ -1,6 +1,26 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<h2>Reports Page</h2>
-<p>Project Cost, Time Tracking, and Team Reports.</p>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Reports</h3>
+        <div>
+            <label for="reportType" class="form-label me-2">Select Report Type:</label>
+            <select name="report_type" id="reportType" class="form-select d-inline-block w-auto"
+                    hx-get="{% url 'report_data' %}"
+                    hx-target="#report-content"
+                    hx-trigger="change"
+                    hx-include="[name='report_type']">
+                <option value="project" selected>Project Cost Tracking</option>
+                <option value="department">Department-wise Report</option>
+                <option value="employee">Employee Utilization</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="report-content" hx-get="{% url 'report_data' %}" hx-include="[name='report_type']" hx-trigger="load">
+        <!-- Report content will load here via HTMX -->
+    </div>
+</div>
 {% endblock %}

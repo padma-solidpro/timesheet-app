@@ -1,6 +1,62 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<h2>Resources Page</h2>
-<p>Manage employees and resource information.</p>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Resources</h2>
+        <button class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#resourceModal"
+                hx-get="{% url 'load_new_resource_form' %}"
+                hx-target="#resourceModal .modal-content"
+                hx-trigger="click">
+            Add New Resource
+        </button>
+    </div>
+    <div id="resource-table">
+        {% include 'resources/partials/resource_table.html' %}
+    </div>
+</div>
+
+<div class="modal fade" id="resourceModal" tabindex="-1" aria-labelledby="resourceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+        </div>
+    </div>
+</div>
+<script>
+    document.body.addEventListener("resourceSaved", function () {
+        // Hide the modal
+        const modalEl = document.getElementById("resourceModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) {
+            modal.hide();
+        }
+
+        // Show success message
+        const alertBox = document.createElement("div");
+        alertBox.className = "alert alert-success alert-dismissible fade show mt-3";
+        alertBox.setAttribute("role", "alert");
+        alertBox.innerHTML = `
+            ✅ Resource saved successfully!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        document.querySelector(".container").prepend(alertBox);
+    });
+</script>
+
+<!-- <script>
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+        if (e.detail.triggeringEvent && e.detail.triggeringEvent.type === "htmx:afterSwap") {
+            if (e.detail.xhr.getResponseHeader("HX-Trigger") === "resourceSaved") {
+                var modal = bootstrap.Modal.getInstance(document.getElementById('resourceModal'));
+                if (modal) {
+                    modal.hide();
+                }
+            }
+        }
+    });
+</script> -->
+
 {% endblock %}

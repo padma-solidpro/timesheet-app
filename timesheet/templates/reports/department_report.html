@@ -1,0 +1,35 @@
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Department</th>
+            <th>Total Projects</th>
+            <th>Total Budget</th>
+            <th>Budget Utilization</th>
+            <th>Total Hours Worked</th>
+            <th>Assigned Resources</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for dept in department_data %}
+        <tr>
+            <td>{{ dept.department }}</td>
+            <td>{{ dept.total_projects }}</td>
+            <td>{{ dept.total_budget }}</td>
+            <td>
+                <div class="progress">
+                    <div class="progress-bar bg-warning" role="progressbar"
+                         style="width: {{ dept.budget_utilization }}%">
+                        {{ dept.budget_utilization }}%
+                    </div>
+                </div>
+            </td>
+            <td>{{ dept.total_hours }}</td>
+            <td>{{ dept.assigned_resources }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">No department data available.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

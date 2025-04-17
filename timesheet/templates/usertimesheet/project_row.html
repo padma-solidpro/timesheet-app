@@ -1,0 +1,19 @@
+<div class="row mb-2 align-items-end">
+    <div class="col-md-4">
+        <label class="form-label">Project</label>
+        <select name="project_{{ index }}" class="form-select" required>
+            <option value="">Select Project</option>
+            {% for project in project_list %}
+                <option value="{{ project.id }}">{{ project.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Task</label>
+        <input type="text" name="task_{{ index }}" class="form-control" required>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Hours</label>
+        <input type="number" name="hours_{{ index }}" class="form-control" required>
+    </div>
+</div>

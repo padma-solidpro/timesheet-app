@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from accounts.views import login_view 
 from dashboard.views import dashboard_view
+from resources.views import resources_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,9 +27,10 @@ urlpatterns = [
     path('logout/', login_view, name='logout'),
 
     path('', login_view, name='login'),
-     path('dashboard/', include('dashboard.urls')),
+    path('dashboard/', include('dashboard.urls')),
     path('usertimesheet/', include('usertimesheet.urls')),
     path('reports/', include('reports.urls')),
     path('projects/', include('projects.urls')),
     path('resources/', include('resources.urls')),
+    
 ]
