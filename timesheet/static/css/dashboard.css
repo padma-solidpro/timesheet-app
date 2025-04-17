@@ -1,0 +1,59 @@
+/* Card styling for metrics */
+.card {
+    border-radius: 8px;
+    border: 1px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card h5 {
+    font-size: 18px;
+    font-weight: 600;
+    text-align: left;
+    color: #6c757d;
+}
+
+.card h3 {
+    font-size: 26px;
+    font-weight: bold;
+    margin-top: 10px;
+    
+}
+
+/* General chart canvas appearance */
+canvas {
+    background-color: #fff;
+    padding: 10px;
+    max-width: 100%;
+    height: auto !important;
+    image-rendering: auto;
+}
+
+/* Fix for chart label wrapping */
+.chartjs-render-monitor {
+    font-size: 12px;
+    white-space: pre-line !important;
+}
+
+/* Wrapper for chart and list containers */
+.chart-container {
+    background-color: #fff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    height: 100%;
+    min-height: 260px; /* Ensures visual balance */
+}
+
+/* Smaller titles for charts */
+.chart-container h6 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.chart-canvas {
+    width: 80% !important;
+    height: 100% !important;
+    display: block;
+}

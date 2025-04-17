@@ -1,0 +1,61 @@
+{% load widget_tweaks %}
+<div class="modal-content">
+    <form method="post"
+          hx-post="{% url 'save_resource' %}"
+          hx-target="#resource-table" 
+          hx-swap="InnerHTML" 
+          hx-on="htmx:afterSwap:dispatchEvent(resourceSaved)">
+        {% csrf_token %}     
+        {% if resource %}
+            <input type="hidden" name="resource_id" value="{{ resource.id }}">
+        {% endif %}
+        <div class="modal-header">
+            <h5 class="modal-title" id="resourceModalLabel">
+                {% if resource %}Edit Resource{% else %}Add New Resource{% endif %}
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <div class="mb-3 col-md-6">{{ form.emp_id.label_tag }} {{ form.emp_id|add_class:"form-control" }} {{ form.emp_id.errors }}</div>
+                <div class="mb-3 col-md-6">{{ form.name.label_tag }} {{ form.name|add_class:"form-control" }} {{ form.name.errors }}</div>
+                <div class="mb-3 col-md-6">{{ form.email.label_tag }} {{ form.email|add_class:"form-control" }} {{ form.email.errors }}</div>
+                <div class="mb-3 col-md-6">{{ form.start_date.label_tag }} {{ form.start_date|add_class:"form-control" }} {{ form.start_date.errors }}</div>
+                <div class="mb-3 col-md-6">{{ form.end_date.label_tag }} {{ form.end_date|add_class:"form-control" }} {{ form.end_date.errors }}</div>
+                <div class="mb-3 col-md-6">{{ form.department.label_tag }} {{ form.department|add_class:"form-select" }} {{ form.department.errors }}</div>
+
+                <div class="mb-3 col-md-6">
+                    {{ form.role.label_tag }}
+                    <select name="role" id="id_role" class="form-select"
+                            hx-get="{% url 'load_reporting_to_options' %}"
+                            hx-target="#reporting-to-wrapper"
+                            hx-include="closest form"
+                            hx-trigger="change">
+                        <option value="">-- Select Role --</option>
+                        {% for value, label in form.fields.role.choices %}
+                            <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {{ form.role.errors }}
+                </div>
+
+                <div id="reporting-to-wrapper">
+                    {% include "resources/reporting_to_dropdown.html" %}
+                </div>
+
+                <div class="mb-3 col-md-12">
+                    {{ form.assigned_projects.label_tag }}
+                    {{ form.assigned_projects|add_class:"form-select" }}
+                    {{ form.assigned_projects.errors }}
+                </div>
+
+                <div class="mb-3 col-md-6">{{ form.hourly_rate.label_tag }} {{ form.hourly_rate|add_class:"form-control" }} {{ form.hourly_rate.errors }}</div>
+                <div class="mb-3 col-md-6">{{ form.status.label_tag }} {{ form.status|add_class:"form-select" }} {{ form.status.errors }}</div>
+            </div>
+        </div>        
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save Resource</button>
+        </div>
+    </form>
+</div>

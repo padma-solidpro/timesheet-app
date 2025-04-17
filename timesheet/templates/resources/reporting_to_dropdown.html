@@ -1,0 +1,26 @@
+<div class="mb-3 col-md-6" id="reporting-to-wrapper">
+    <label for="id_reporting_to">Reporting To</label>
+    <select name="reporting_to" id="id_reporting_to" class="form-select">
+        <option value="">-- Select Reporting To --</option>
+        {% for resource in reporting_to_options %}
+            <option value="{{ resource.id }}"
+                {% if resource.id == form.reporting_to.value %}selected{% endif %}>
+                {{ resource.name }}
+            </option>
+        {% empty %}
+            <option value="">No available reporting person for this role</option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- <div class="mb-3 col-md-6" id="reporting-to-wrapper">
+    <label for="id_reporting_to">Reporting To</label>
+    <select name="reporting_to" id="id_reporting_to" class="form-select">
+        <option value="">-- Select Reporting To --</option>
+        {% for resource in reporting_to_options %}
+            <option value="{{ resource.id }}" {% if resource.id|stringformat:"s" == selected_id|stringformat:"s" %}selected{% endif %}>{{ resource.name }}</option>
+        {% empty %}
+            <option value="">No available reporting person for this role</option>
+        {% endfor %}
+    </select>
+</div> -->

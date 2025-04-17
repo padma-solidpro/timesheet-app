@@ -1,10 +1,251 @@
-{% extends 'base.html' %}
-
-{% block title %}Dashboard{% endblock %}
+{% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2>Welcome, {{ request.user.username }}!</h2>
-    <p>This is your dashboard. We’ll soon add cards and charts here.</p>
+<div class="container my-4">
+    <h2 class="mb-4">Dashboard</h2>
+
+    <!-- Scorecards -->
+    <div class="row mb-4">
+        {% for metric in metrics %}
+            {% with title=metric.0 value=metric.1 %}
+                <div class="col-md-2">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ title }}</h5>
+                            <h3 class="card-text">{{ value }}</h3>
+                        </div>
+                    </div>
+                </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+
+    <!-- Three-section Chart Row -->
+    <div class="row mb-4 align-items-stretch">
+        <div class="col-md-5">
+            <div class="chart-container me-md-1 mb-2 mb-md-0">
+                <h6 class="text-muted">Project-wise Cost Utilization</h6>
+                <div style="height: 200px;"><canvas id="projectUtilChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="chart-container me-md-1 mb-2 mb-md-0">
+                <h6 class="text-muted">Department-wise Cost</h6>
+                <div style="height: 200px;"><canvas id="deptPieChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="chart-container me-md-1 mb-2 mb-md-0">
+                <h6 class="text-danger">Projects Nearing Budget</h6>
+                <ul>
+                    {% for proj in nearing_budget %}
+                        <li><strong>{{ proj.project }}</strong> - {{ proj.utilization }}%</li>
+                    {% empty %}
+                        <li>No projects nearing budget.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Chart Row -->
+    <div class="row mb-4 align-items-stretch">
+        <div class="col-md-5">
+            <div class="chart-container me-md-2 mb-2 mb-md-0">
+                <h6 class="text-muted">Project Resource Utilization</h6>
+                <div style="height: 200px;"><canvas id="resUtilChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="chart-container me-md-2 mb-2 mb-md-0">
+                <h6 class="text-muted">Weekly Logged-in Hours</h6>
+                <div style="height: 200px;"><canvas id="weeklyChart"></canvas></div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    Chart.defaults.devicePixelRatio = window.devicePixelRatio;
+    const sharedOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#000',
+                titleColor: '#fff',
+                bodyColor: '#eee',
+                borderColor: '#ccc',
+                borderWidth: 1
+            }
+        },
+        scales: {
+            x: {
+                type: 'category', // ✅ Fix: Ensure category axis for labels
+                grid: { display: false },
+                ticks: {
+                    autoSkip: false, // Prevent skipping
+                    maxRotation: 45,
+                    minRotation: 0,
+                    callback: function(value, index, ticks) {
+                        const label = this.getLabelForValue(value);
+                        return label.length > 15 ? label.match(/.{1,15}/g).join('\n') : label;
+                    }
+                }
+            },
+            y: {
+                grid: { display: false },
+                ticks: {
+                    beginAtZero: true,
+                    callback: function(value) {
+                        return value;
+                    }
+                }
+            }
+        }
+    };
+
+    const projectUtil = {
+        labels: {{ project_labels|safe }},
+        datasets: [{
+            label: '% Utilization',
+            data: {{ project_utilization|safe }},
+            backgroundColor: {{ project_colors|safe }},
+            borderRadius: 6
+        }]
+    };
+    console.log(projectUtil.labels);
+    const deptData = {
+        labels: {{ dept_cost_labels|safe }},
+        datasets: [{
+            data: {{ dept_cost_values|safe }},
+            backgroundColor: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949']
+        }]
+    };
+
+    const resUtilData = {
+        labels: {{ res_util_labels|safe }},
+        datasets: [{
+            label: '% Utilization',
+            data: {{ res_util_values|safe }},
+            backgroundColor: '#6a5acd',
+            borderRadius: 6
+        }]
+    };
+
+    const weeklyData = {
+        labels: {{ weekly_labels|safe }},
+        datasets: [{
+            label: 'Hours Logged',
+            data: {{ weekly_values|safe }},
+            fill: true,
+            borderColor: '#20c997',
+            backgroundColor: 'rgba(32, 201, 151, 0.1)',
+            tension: 0.3,
+            pointBackgroundColor: '#20c997',
+            pointRadius: 4
+        }]
+    };
+
+    new Chart(document.getElementById('projectUtilChart'), {
+        type: 'bar',
+        data: projectUtil,
+        options: {
+            ...sharedOptions,
+            indexAxis: 'y', // Horizontal bars
+            scales: {
+                y: {
+                    grid: { display: false },
+                    ticks: {
+                        callback: function(value, index, ticks) {
+                            const label = this.getLabelForValue(value);
+                            return label.length > 15 ? label.match(/.{1,15}/g).join('\n') : label;
+                        }
+                    }
+                },
+                x: {
+                    beginAtZero: true,
+                    grid: { display: false },
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        stepSize: 10,
+                        autoSkip: false,
+                        callback: function(value) {
+                            return value + '%'; // If values are decimals (0.3 → 30%)
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+
+
+    new Chart(document.getElementById('deptPieChart'), {
+        type: 'pie',
+        data: deptData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    backgroundColor: '#000',
+                    titleColor: '#fff',
+                    bodyColor: '#eee'
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('resUtilChart'), {
+        type: 'bar',
+        data: resUtilData,
+        options: {
+            ...sharedOptions,
+            indexAxis: 'y', // Horizontal bars
+            scales: {
+                y: { // Labels are on the y-axis now
+                    grid: { display: false },
+                    ticks: {
+                        callback: function(value, index, ticks) {
+                            const label = this.getLabelForValue(value);
+                            return label.length > 15 ? label.match(/.{1,15}/g).join('\n') : label;
+                        }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    beginAtZero: true,
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        stepSize: 10,
+                        callback: function(value){
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('weeklyChart'), {
+        type: 'line',
+        data: weeklyData,
+        options: {
+            ...sharedOptions,
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+</script>
 {% endblock %}

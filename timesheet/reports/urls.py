@@ -1,6 +1,7 @@
 from django.urls import path
-from .views import reports_view
+from . import views
 
 urlpatterns = [
-    path('', reports_view, name='reports'),
+    path('', views.reports_view, name='reports'),  # Main page
+    path('data/', views.reports_partial_view, name='report_data'),  # HTMX partial content
 ]

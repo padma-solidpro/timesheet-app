@@ -1,0 +1,32 @@
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Emp ID</th>
+            <th>Name</th>
+            <th>Total Hours</th>
+            <th>Billable Hours</th>
+            <th>Non-Billable Hours</th>
+            <th>Utilization %</th>
+            <th>Billable Cost</th>
+            <th>Non-Billable Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for emp in employee_data %}
+        <tr>
+            <td>{{ emp.emp_id }}</td>
+            <td>{{ emp.name }}</td>
+            <td>{{ emp.total_hours }}</td>
+            <td>{{ emp.billable_hours }}</td>
+            <td>{{ emp.non_billable_hours }}</td>
+            <td>{{ emp.utilization }}%</td>
+            <td>{{ emp.billable_cost|floatformat:2 }}</td>
+            <td>{{ emp.non_billable_cost|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" class="text-center">No employee data available.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

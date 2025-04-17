@@ -1,0 +1,53 @@
+<table class="table table-striped">
+    <thead>
+        <tr>
+
+            <th>Emp ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>Role</th>
+            <th>Assigned Projects</th>
+            <th>Reporting To</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for resource in resources %}
+        <tr>
+
+            <td>{{ resource.emp_id }}</td>
+            <td>{{ resource.name }}</td>
+            <td>{{ resource.email }}</td>
+            <td>{{ resource.department }}</td>
+            <td>{{ resource.role }}</td>
+            <td>
+                {% for project in resource.assigned_projects.all %}
+                    <span class="badge bg-secondary">{{ project.name }}</span>
+                {% empty %}
+                    -
+                {% endfor %}
+            </td>
+            <td>
+                {% if resource.reporting_to %}
+                    {{ resource.reporting_to.name }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resourceModal"
+                        hx-get="{% url 'load_resource_form' pk=resource.id %}"
+                        hx-target="#resourceModal .modal-content"
+                        hx-trigger="click">
+                    Edit
+                </button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center">No resources found.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
