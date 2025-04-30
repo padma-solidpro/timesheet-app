@@ -1,0 +1,69 @@
+{% csrf_token %}
+<form method="POST" action="{% url 'save_full_task' %}"
+      hx-post="{% url 'save_full_task' %}"
+      hx-target="#task-table" hx-swap="innerHTML">
+  
+  <!-- Category Dropdown -->
+  <label for="category">Category:</label>
+  <select name="category" id="category-select" class="form-select"
+          hx-get="{% url 'load_tasks_for_category' %}"
+          hx-target="#task-container" hx-trigger="change">
+    <option value="">Select Category</option>
+    {% for category in categories %}
+      <option value="{{ category.id }}">{{ category.name }}</option>
+    {% endfor %}
+    <option value="__new__">+ Add New Category</option>
+  </select>
+
+  <!-- New Category Input -->
+  <div id="new-category-container" style="display:none;" class="mt-2">
+    <input type="text" name="new_category" class="form-control" placeholder="New category name">
+  </div>
+
+  <!-- Task Container -->
+  <div id="task-container" class="mt-3"></div>
+    
+
+  <!-- SubTask Input Fields -->
+  <div id="subtask-container" class="mt-3" style="display:none;">
+    <label>SubTasks:</label>
+    <div id="subtask-list">
+      <input type="text" name="subtasks" class="form-control mb-2" placeholder="Enter subtask">
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addSubtaskField()">+ Add another subtask</button>
+  </div>
+
+  <div class="mt-4">
+    <button type="submit" class="btn btn-success">Save</button>
+  </div>
+</form>
+
+<script>
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'category-select') {
+      const isNew = e.target.value === '__new__';
+      document.getElementById('new-category-container').style.display = isNew ? 'block' : 'none';
+    }
+  });
+
+  document.addEventListener('htmx:afterSwap', function (e) {
+    if (e.detail.target.id === 'task-container') {
+      const taskSelect = document.getElementById('task-select');
+      if (taskSelect) {
+        taskSelect.addEventListener('change', function () {
+          document.getElementById('subtask-container').style.display = 'block';
+        });
+      }
+    }
+  });
+
+  function addSubtaskField() {
+    const list = document.getElementById('subtask-list');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = 'subtasks';
+    input.className = 'form-control mb-2';
+    input.placeholder = 'Enter subtask';
+    list.appendChild(input);
+  }
+</script>

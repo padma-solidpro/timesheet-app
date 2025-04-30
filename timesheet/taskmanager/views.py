@@ -1,7 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from core.models import Category, Task, SubTask
 from .forms import CategoryForm, TaskForm, SubTaskForm
+from django.views.decorators.csrf import csrf_exempt
+from django.template.loader import render_to_string
 
 # Main task page (returns full or partial based on request)
 def task_page(request):
@@ -99,3 +101,63 @@ def delete_subtask(request, pk):
     subtask = get_object_or_404(SubTask, pk=pk)
     subtask.delete()
     return task_page(request)
+
+# --------------------------
+# CASCADING TASK FORM VIEWS (HTMX)
+# --------------------------
+
+def load_tasks_for_category(request):
+    category_id = request.GET.get("category")
+    if not category_id or category_id == "__new__":
+        return render(request, "taskmanager/partials/task_dropdown.html", {"tasks": []})
+    try:
+        category_id = int(category_id)
+    except ValueError:
+        return render(request, "taskmanager/partials/task_dropdown.html", {"tasks": []})
+
+    tasks = Task.objects.filter(category_id=category_id)
+    return render(request, "taskmanager/partials/task_dropdown.html", {"tasks": tasks})
+
+@csrf_exempt
+def save_full_task(request):
+    if request.method == "POST":
+        category_id = request.POST.get("category")
+        new_category_name = request.POST.get("new_category")
+        task_id = request.POST.get("task")
+        new_task_name = request.POST.get("new_task")
+        subtasks = request.POST.getlist("subtasks")
+
+        # Handle category
+        if category_id == "__new__" and new_category_name:
+            category = Category.objects.create(name=new_category_name)
+        else:
+            try:
+                category = get_object_or_404(Category, id=int(category_id))
+            except (ValueError, TypeError):
+                return JsonResponse({"error": "Invalid category ID"}, status=400)
+
+        # Handle task
+        if task_id == "__new__" and new_task_name:
+            task = Task.objects.create(name=new_task_name, category=category)
+        else:
+            try:
+                task = get_object_or_404(Task, id=int(task_id))
+            except (ValueError, TypeError):
+                return JsonResponse({"error": "Invalid task ID"}, status=400)
+
+        # Handle subtasks
+        for name in subtasks:
+            if name.strip():
+                SubTask.objects.create(name=name.strip(), task=task)
+
+        html = render_to_string("taskmanager/partials/task_table.html", {
+            "categories": Category.objects.prefetch_related("tasks__subtasks").all()
+        })
+        return HttpResponse(html + "<script>window.dispatchEvent(new Event('closeModal'));</script>")
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+# View to serve the cascading form modal content
+def cascading_task_form(request):
+    categories = Category.objects.all()
+    return render(request, "taskmanager/partials/cascading_task_form.html", {"categories": categories})

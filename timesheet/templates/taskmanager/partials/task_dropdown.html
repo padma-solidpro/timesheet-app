@@ -1,0 +1,22 @@
+<label>Tasks:</label>
+<select name="task" id="task-select" class="form-select">
+  <option value="" disabled selected>Select Task</option>
+  {% for task in tasks %}
+    <option value="{{ task.id }}">{{ task.name }}</option>
+  {% endfor %}
+  <option value="__new__">+ Add New Task</option>
+</select>
+
+<!-- This is the container you're toggling -->
+<div id="new-task-container" class="mt-2" style="display: none;">
+  <input type="text" name="new_task" class="form-control" placeholder="Enter new task name">
+</div>
+
+<script>
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'task-select') {
+      const isNew = e.target.value === '__new__';
+      document.getElementById('new-task-container').style.display = isNew ? 'block' : 'none';
+    }
+  });
+</script>

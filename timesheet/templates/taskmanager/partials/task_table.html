@@ -11,7 +11,7 @@
            hx-delete="{% url 'delete_category' category.id %}"
            hx-confirm="Are you sure?"
            hx-target="#task-table"
-           hx-swap="outerHTML"
+           hx-swap="innerHTML"
            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Delete</a>
       </div>
     </div>
