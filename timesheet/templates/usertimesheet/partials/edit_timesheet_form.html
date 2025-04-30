@@ -1,0 +1,67 @@
+<form method="POST" 
+      hx-post="/usertimesheet/edit/{{ timesheet.id }}/" 
+      hx-target="#modal .modal-content" 
+      hx-swap="outerHTML">
+    {% csrf_token %}
+
+    <!-- Project Dropdown -->
+    <div class="mb-3">
+        <label for="id_project">Project</label>
+        <select name="project" id="id_project"
+                class="form-control"
+                hx-get="{% url 'get_project_tasks' %}"
+                hx-target="#id_task"
+                hx-trigger="change"
+                hx-swap="innerhtml"
+                hx-include="#id_project">
+            <option value="">Select Project</option>
+            {% for project in assigned_projects %}
+                <option value="{{ project.id }}" {% if timesheet.project.id == project.id %}selected{% endif %}>{{ project.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <!-- Task Dropdown -->
+    <div class="mb-3">
+        <label for="id_task">Task</label>
+        <select name="task" id="id_task"
+                class="form-control"
+                hx-get="{% url 'get_task_subtasks' %}"
+                hx-trigger="change"
+                hx-target="#id_subtask"
+                hx-swap="innerhtml"
+                hx-include="#id_task">
+            {% include "usertimesheet/partials/task_options.html" with tasks=available_tasks selected_id=timesheet.task.id %}
+        </select>
+    </div>
+    
+    <!-- Subtask Dropdown -->
+    <div class="mb-3">
+        <label for="id_subtask">Subtask</label>
+        <select name="subtask" id="id_subtask"
+                class="form-control">
+            <option value="">-- Select Subtask --</option>
+            {% for subtask in available_subtasks %}
+                <option value="{{ subtask.id }}" {% if timesheet.subtask.id == subtask.id %}selected{% endif %}>{{ subtask.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="mb-3">
+        <label>Description</label>
+        <input type="text" name="task_description" class="form-control" value="{{ form.instance.task_description  }}">
+    </div>
+
+    <div class="mb-3">
+        <label>Hours</label>
+        <input type="number" step="0.01" name="hours" class="form-control" value="{{ form.instance.hours }}">
+    </div>
+
+    <button type="submit" class="btn btn-success">Update</button>
+</form>
+
+<!-- Show modal -->
+<script>
+    var modal = new bootstrap.Modal(document.getElementById('modal'));
+    modal.show();
+</script>

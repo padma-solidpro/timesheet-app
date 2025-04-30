@@ -1,0 +1,12 @@
+<form method="post"
+      hx-post="{% url 'save_project' %}"
+      hx-target="#projectTable"
+      hx-swap="outerHTML"
+      hx-on="htmx:afterRequest: document.getElementById('projectModal').querySelector('.btn-close').click()">
+    {% csrf_token %}
+    {{ form.as_p }}
+    {% if form.instance.pk %}
+        <input type="hidden" name="project_id" value="{{ form.instance.pk }}">
+    {% endif %}
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>

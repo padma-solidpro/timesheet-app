@@ -25,12 +25,15 @@ urlpatterns = [
     
     path('login/', login_view, name='login'),
     path('logout/', login_view, name='logout'),
-
     path('', login_view, name='login'),
+    
+    path('accounts/', include('accounts.urls')),
+    
     path('dashboard/', include('dashboard.urls')),
     path('usertimesheet/', include('usertimesheet.urls')),
     path('reports/', include('reports.urls')),
     path('projects/', include('projects.urls')),
     path('resources/', include('resources.urls')),
+    path('taskmanager/', include('taskmanager.urls')),
     
 ]

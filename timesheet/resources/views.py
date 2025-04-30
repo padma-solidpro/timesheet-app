@@ -86,7 +86,7 @@ def load_resource_form(request, pk):
 
     role = resource.role
     reporting_to_role = ROLE_HIERARCHY.get(role)
-    reporting_to_options = Resource.objects.filter(role__iexact=reporting_to_role)
+    reporting_to_options = Resource.objects.filter(role__name__iexact=reporting_to_role)
 
     html = render_to_string('resources/partials/resource_form_inner.html', {'form': form, 'resource': resource,'reporting_to_options': reporting_to_options}, request=request)
     return HttpResponse(html)

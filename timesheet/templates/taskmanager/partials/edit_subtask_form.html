@@ -1,0 +1,13 @@
+<form hx-post="{% url 'edit_subtask' subtask.id %}" hx-target="#task-table" hx-swap="outerHTML" class="p-3">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ form.name.label_tag }} {{ form.name }}
+    </div>
+    <div class="mb-3">
+      {{ form.task.label_tag }} {{ form.task }}
+    </div>
+    <div class="text-end">
+      <button type="submit" class="btn btn-primary">Update</button>
+    </div>
+  </form>
+  

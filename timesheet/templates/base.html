@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/htmx.org@1.8.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
 
     <style>
         body {
@@ -86,6 +87,9 @@
             </a>
             <a href="{% url 'resources' %}" class="{% if request.path == '/team/' %}active{% endif %}">
                 <i class="fas fa-users"></i> Team
+            </a>
+            <a href="{% url 'taskmanager' %}" class="{% if request.path == '/team/' %}active{% endif %}">
+                <i class="fas fa-users"></i> Task Management
             </a>
         </div>
 

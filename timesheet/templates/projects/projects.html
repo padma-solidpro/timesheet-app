@@ -1,109 +1,115 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="container mt-4">
-    <ul class="nav nav-tabs" id="projectTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="clients-tab" data-bs-toggle="tab" data-bs-target="#clients" type="button" role="tab">
-                Clients
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
-                Projects
-            </button>
-        </li>
-    </ul>
+  <ul class="nav nav-tabs" id="projectTabs" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#clients">Clients</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#projects">Projects</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#assignments">Assignments</a></li>
+  </ul>
 
-    <div class="tab-content mt-4">
-        <!-- Clients Tab -->
-        <div class="tab-pane fade show active" id="clients" role="tabpanel">
-            <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#clientModal">Add Client</button>
-            </div>
-            <table class="table table-bordered">
-                <thead>
-                    <tr><th>Name</th><th>Email</th><th>Location</th></tr>
-                </thead>
-                <tbody>
-                    {% for client in clients %}
-                    <tr>
-                        <td>{{ client.name }}</td>
-                        <td>{{ client.email }}</td>
-                        <td>{{ client.location }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="3">No clients found.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+  <div class="tab-content mt-3">
+    <!-- Clients Tab -->
+    <div class="tab-pane fade show active" id="clients">
+      <button class="btn btn-primary mb-2" 
+              hx-get="{% url 'add_client_form' %}"
+              hx-target="#clientModalBody"
+              hx-trigger="click"
+              data-bs-toggle="modal" data-bs-target="#clientModal">Add Client</button>
 
-        <!-- Projects Tab -->
-        <div class="tab-pane fade" id="projects" role="tabpanel">
-            <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#projectModal">Add Project</button>
-            </div>
-            <table class="table table-bordered">
-                <thead>
-                    <tr><th>Name</th><th>Client</th><th>Status</th><th>Type</th><th>Budget</th></tr>
-                </thead>
-                <tbody>
-                    {% for project in projects %}
-                    <tr>
-                        <td>{{ project.name }}</td>
-                        <td>{{ project.client.name }}</td>
-                        <td>{{ project.status }}</td>
-                        <td>{{ project.type }}</td>
-                        <td>{{ project.budget }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="5">No projects found.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+      <div id="clientTable" hx-get="{% url 'client_table' %}" hx-trigger="load"></div>
     </div>
+
+    <!-- Projects Tab -->
+    <div class="tab-pane fade" id="projects">
+      <button class="btn btn-primary mb-2" 
+              hx-get="{% url 'add_project_form' %}"
+              hx-target="#projectModalBody"
+              hx-trigger="click"
+              data-bs-toggle="modal" data-bs-target="#projectModal">Add Project</button>
+      <div id="projectTableContainer">
+        <div id="projectTable" hx-get="{% url 'project_table' %}" hx-trigger="load"></div>
+      </div>
+    </div>
+
+    <!-- Assignments Tab -->
+    <div class="tab-pane fade" id="assignments">
+      <button class="btn btn-primary mb-2" 
+              hx-get="{% url 'add_assignment_form' %}"
+              hx-target="#assignmentModalBody"
+              hx-trigger="click"
+              data-bs-toggle="modal" data-bs-target="#assignmentModal">Assign Task</button>
+
+      <div id="assignmentTable" hx-get="{% url 'assignment_table' %}" hx-trigger="load"></div>
+    </div>
+  </div>
 </div>
 
-<!-- Client Modal -->
-<div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form method="POST" class="modal-content">
-            {% csrf_token %}
-            <div class="modal-header">
-                <h5 class="modal-title">Add Client</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                {{ client_form.as_p }}
-            </div>
-            <div class="modal-footer">
-                <button type="reset" class="btn btn-secondary">Clear</button>
-                <button type="submit" name="save_client" class="btn btn-success">Save</button>
-            </div>
-        </form>
+<!-- Modals -->
+<div class="modal fade" id="clientModal" tabindex="-1" hx-on::hidden-bs.modal="htmx.trigger('#clientTable', 'load')">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Client Form</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="clientModalBody"></div>
     </div>
+  </div>
 </div>
 
-<!-- Project Modal -->
-<div class="modal fade" id="projectModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form method="POST" class="modal-content">
-            {% csrf_token %}
-            <div class="modal-header">
-                <h5 class="modal-title">Add Project</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                {{ project_form.as_p }}
-            </div>
-            <div class="modal-footer">
-                <button type="reset" class="btn btn-secondary">Clear</button>
-                <button type="submit" name="save_project" class="btn btn-primary">Save</button>
-            </div>
-        </form>
+<div class="modal fade" id="projectModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Project Form</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="projectModalBody"></div>
     </div>
+  </div>
 </div>
+
+<div class="modal fade" id="assignmentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Task Assignment Form</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="assignmentModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      // Check which table was updated and close the respective modal
+      const modals = {
+        "clientTable": "clientModal",
+        "projectTable": "projectModal",
+        "assignmentTable": "assignmentModal"
+      };
+  
+      const targetTableId = evt.detail.target.id;
+      
+      if (modals[targetTableId]) {
+        const modalEl = document.getElementById(modals[targetTableId]);
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+      }
+    });
+  </script>
+  
+<!-- <script>
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      if (evt.detail.target.id === "clientTable") {
+        const modalEl = document.getElementById("clientModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+      }
+    });
+  </script> -->
+
 {% endblock %}

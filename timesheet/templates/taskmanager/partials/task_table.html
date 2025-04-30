@@ -1,0 +1,123 @@
+{% for category in categories %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>{{ category.name }}</strong>
+      <div class="float-end">
+        <a href="#" class="me-2 text-primary small"
+           hx-get="{% url 'edit_category' category.id %}"
+           hx-target="#modal-body"
+           data-bs-toggle="modal" data-bs-target="#modal">[Edit]</a>
+        <a href="#" class="text-danger small"
+           hx-delete="{% url 'delete_category' category.id %}"
+           hx-confirm="Are you sure?"
+           hx-target="#task-table"
+           hx-swap="outerHTML"
+           hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Delete</a>
+      </div>
+    </div>
+    <div class="card-body">
+      {% for task in category.tasks.all %}
+        <div class="mb-2">
+          <strong>Task:</strong> {{ task.name }}
+          <span class="float-end">
+            <a href="#" class="me-2 text-primary small"
+               hx-get="{% url 'edit_task' task.id %}"
+               hx-target="#modal-body"
+               data-bs-toggle="modal" data-bs-target="#modal">[Edit]</a>
+            <a href="#" class="text-danger small"
+               hx-delete="{% url 'delete_task' task.id %}"
+               hx-confirm="Are you sure?"
+               hx-target="#task-table"
+               hx-swap="outerHTML"
+               hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Delete</a>
+          </span>
+        </div>
+        <ul>
+          {% for subtask in task.subtasks.all %}
+            <li>
+              {{ subtask.name }}
+              <span class="float-end">
+                <a href="#" class="me-2 text-primary small"
+                   hx-get="{% url 'edit_subtask' subtask.id %}"
+                   hx-target="#modal-body"
+                   data-bs-toggle="modal" data-bs-target="#modal">[Edit]</a>
+                <a href="#" class="text-danger small"
+                   hx-delete="{% url 'delete_subtask' subtask.id %}"
+                   hx-confirm="Are you sure?"
+                   hx-target="#task-table"
+                   hx-swap="outerHTML"
+                   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Delete</a>
+              </span>
+            </li>
+          {% empty %}
+            <li>No subtasks</li>
+          {% endfor %}
+        </ul>
+      {% empty %}
+        <p>No tasks found for this category.</p>
+      {% endfor %}
+    </div>
+  </div>
+{% empty %}
+  <p>No categories found.</p>
+{% endfor %}
+<!-- {% for category in categories %}
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between">
+      <strong>{{ category.name }}</strong>
+      <div>
+        <a href="#" class="me-2 text-primary"
+           hx-get="{% url 'edit_category' category.id %}" 
+           hx-target="#modal-body"
+           data-bs-toggle="modal" data-bs-target="#modal">Edit</a>
+        <a href="#" class="text-danger"
+           hx-delete="{% url 'delete_category' category.id %}"
+           hx-confirm="Are you sure?"
+           hx-target="#task-table"
+           hx-swap="outerHTML">Delete</a>
+      </div>
+    </div>
+    <div class="card-body">
+      {% for task in category.tasks.all %}
+        <div class="mb-2">
+          <strong>Task:</strong> {{ task.name }}
+          <div class="float-end">
+            <a href="#" class="me-2 text-primary"
+               hx-get="{% url 'edit_task' task.id %}" 
+               hx-target="#modal-body"
+               data-bs-toggle="modal" data-bs-target="#modal">Edit</a>
+            <a href="#" class="text-danger"
+               hx-delete="{% url 'delete_task' task.id %}"
+               hx-confirm="Are you sure?"
+               hx-target="#task-table"
+               hx-swap="outerHTML">Delete</a>
+          </div>
+        </div>
+        <ul>
+          {% for subtask in task.subtasks.all %}
+            <li>
+              {{ subtask.name }}
+              <div class="float-end">
+                <a href="#" class="me-2 text-primary"
+                   hx-get="{% url 'edit_subtask' subtask.id %}" 
+                   hx-target="#modal-body"
+                   data-bs-toggle="modal" data-bs-target="#modal">Edit</a>
+                <a href="#" class="text-danger"
+                   hx-delete="{% url 'delete_subtask' subtask.id %}"
+                   hx-confirm="Are you sure?"
+                   hx-target="#task-table"
+                   hx-swap="outerHTML">Delete</a>
+              </div>
+            </li>
+          {% empty %}
+            <li>No subtasks</li>
+          {% endfor %}
+        </ul>
+      {% empty %}
+        <p>No tasks found for this category.</p>
+      {% endfor %}
+    </div>
+  </div>
+{% empty %}
+  <p>No categories found.</p>
+{% endfor %} -->

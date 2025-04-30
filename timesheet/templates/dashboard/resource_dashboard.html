@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">Dashboard</h2>
+
+  <!-- Summary Cards -->
+  <div class="row text-center mb-4">
+    <div class="col-sm-4 col-md-3 mb-2">
+      <div class="card p-2 shadow-sm small-card">
+        <h6>Total Projects</h6>
+        <h3>{{ total_assigned_projects }}</h3>
+      </div>
+    </div>
+    <div class="col-sm-4 col-md-3 mb-2">
+      <div class="card p-2 shadow-sm small-card">
+        <h6>Total Hours (Current Week)</h6>
+        <h3>{{ total_hours }}</h3>
+      </div>
+    </div>
+    <div class="col-sm-4 col-md-3 mb-2">
+      <div class="card p-2 shadow-sm small-card">
+        <h6>Utilization%</h6>
+        <h3>{{ utilization }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="row mb-4">
+    <div class="col-md-6" id="loggedHoursSection">
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6>Logged Hours</h6>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary active" onclick="switchLoggedChart('project')">Project</button>
+            <button class="btn btn-outline-primary" onclick="switchLoggedChart('task')">Task</button>
+          </div>
+        </div>
+        <canvas id="loggedChart" class="chart-canvas"></canvas>
+      </div>
+    </div>
+  
+    <div class="col-md-6" id="workedHoursSummarySection">
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6>Worked Hours Summary</h6>
+          <div class="btn-group btn-group-sm">
+            <button id="btn-week" class="btn btn-outline-primary active" onclick="switchView('week')">Weekly</button>
+            <button id="btn-month" class="btn btn-outline-primary" onclick="switchView('month')">Monthly</button>
+          </div>
+        </div>
+        <canvas id="timeSummaryChart" class="chart-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Row 2: Billable vs Non-Billable + Allotted vs Logged (per Task) -->
+  <div class="row mb-4">
+    <div class="col-md-4" id="billableHoursSection">
+      <div class="card p-3">
+        <h6>Billable vs Non-Billable Hours</h6>
+        <canvas id="billableChart" class="chart-canvas"></canvas>
+      </div>
+    </div>
+  
+    <div class="col-md-8" id="allottedVsLoggedSection">
+      <div class="card p-3">
+        <h6>Allotted vs Logged Hours (per Task)</h6>
+        <canvas id="allottedChart" class="chart-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+
+<!-- ChartJS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let projectChart, timeSummaryChart, allottedChart, loggedChart;
+let currentView = "week";
+
+// These need to be accessible globally
+const weeklyLabels = {{ weekly_labels|safe }};
+const weeklyData = {{ weekly_values|safe }};
+const monthlyLabels = {{ monthly_labels|safe }};
+const monthlyData = {{ monthly_values|safe }};
+
+// ✅ Move this OUTSIDE the DOMContentLoaded block
+const loggedChartData = {
+  project: {
+    labels: {{ project_hours_labels|safe }},
+    data: {{ project_hours_values|safe }}
+  },
+  task: {
+    labels: {{ task_hours_labels|safe }},
+    data: {{ task_hours_values|safe }}
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  // Project-wise Chart
+  projectChart = new Chart(document.getElementById("projectChart"), {
+    type: "bar",
+    data: {
+      labels: {{ project_hours_labels|safe }},
+      datasets: [{
+        label: "Hours Logged",
+        data: {{ project_hours_values|safe }},
+        backgroundColor: "#36b9cc"
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        tooltip: { enabled: true },
+        legend: { display: true }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+
+  // Logged Hours Chart (Initial: Project)
+  loggedChart = new Chart(document.getElementById("loggedChart"), {
+    type: "bar",
+    data: {
+      labels: loggedChartData.project.labels,
+      datasets: [{
+        label: "Hours",
+        data: loggedChartData.project.data,
+        backgroundColor: "#4e73df"
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  // Donut Chart: Billable vs Non-Billable
+  new Chart(document.getElementById("billableChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Billable", "Non-Billable"],
+      datasets: [{
+        data: [{{ billable_hours }}, {{ non_billable_hours }}],
+        backgroundColor: ["#1cc88a", "#e74a3b"]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "70%"
+    }
+  });
+
+  // Time Summary Chart
+  const ctx = document.getElementById("timeSummaryChart").getContext("2d");
+  timeSummaryChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: weeklyLabels,
+      datasets: [{
+        label: "Hours Worked",
+        data: weeklyData,
+        borderColor: "#36b9cc",
+        backgroundColor: "#36b9cc",
+        fill: false,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+
+  // Allotted vs Logged Chart
+  allottedChart = new Chart(document.getElementById("allottedChart"), {
+    type: "bar",
+    data: {
+      labels: [{% for row in task_comparison %}"{{ row.task }}",{% endfor %}],
+      datasets: [
+        {
+          label: "Allotted",
+          data: [{% for row in task_comparison %}{{ row.allotted|floatformat:0 }},{% endfor %}],
+          backgroundColor: "#4e73df"
+        },
+        {
+          label: "Logged",
+          data: [{% for row in task_comparison %}{{ row.logged|floatformat:0 }},{% endfor %}],
+          backgroundColor: "#e74a3b"
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+});
+
+// Chart Switch Buttons
+function switchView(view) {
+  currentView = view;
+  document.getElementById("btn-week").classList.remove("active");
+  document.getElementById("btn-month").classList.remove("active");
+  document.getElementById("btn-" + view).classList.add("active");
+
+  if (view === "week") {
+    updateTimeSummary(weeklyLabels, weeklyData);
+  } else {
+    updateTimeSummary(monthlyLabels, monthlyData);
+  }
+}
+
+function switchLoggedChart(view) {
+  if (loggedChart && loggedChartData[view]) {
+    loggedChart.data.labels = loggedChartData[view].labels;
+    loggedChart.data.datasets[0].data = loggedChartData[view].data;
+    loggedChart.update();
+
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`button[onclick="switchLoggedChart('${view}')"]`).classList.add('active');
+  }
+}
+
+function updateTimeSummary(labels, data) {
+  timeSummaryChart.data.labels = labels;
+  timeSummaryChart.data.datasets[0].data = data;
+  timeSummaryChart.update();
+}
+</script>
+
+{% endblock %}

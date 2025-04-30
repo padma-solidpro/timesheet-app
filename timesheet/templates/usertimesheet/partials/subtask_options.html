@@ -1,0 +1,13 @@
+
+<option value="">-- Select Subtask --</option>
+{% for subtask in subtasks %}
+  <option value="{{ subtask.id }}" {% if selected_id|stringformat:"s" == subtask.id|stringformat:"s" %}selected{% endif %}>
+    {{ subtask.name }}
+  </option>
+{% endfor %}
+
+<!-- working code -->
+<!-- <option value="">-- Select Subtask --</option>
+{% for subtask in subtasks %}
+<option value="{{ subtask.id }}">{{ subtask.name }}</option>
+{% endfor %} -->

@@ -1,0 +1,70 @@
+<div id="timesheet-entries">
+    <table class="table table-bordered mt-4">
+        <thead class="table-light">
+            <tr>
+                <th>Date</th>
+                <th>Project</th>
+                <th>Task</th>
+                <th>Subtask</th>
+                <th>Description</th>
+                <th>Hours</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if timesheet_entries %}
+                {% for entry in timesheet_entries %}
+                <tr>
+                    <td>{{ entry.date }}</td>
+                    <td>{{ entry.project.name }}</td>
+                    <td>
+                        {% if entry.task %}
+                            {{ entry.task.name }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if entry.subtask %}
+                            {{ entry.subtask.name }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ entry.task_description }}</td>
+                    <td>{{ entry.hours }}</td>
+                    <td>
+                        {% if entry.status == 'Approved' %}
+                            <span class="badge bg-success">Approved</span>
+                        {% elif entry.status == 'Pending' %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% else %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if entry.status != "Approved" %}
+                            <button class="btn btn-sm btn-primary"
+                                    hx-get="{% url 'edit_timesheet' entry.id %}"
+                                    hx-target="#modal-body"
+                                    hx-trigger="click"
+                                    _="on htmx:afterSwap wait 10ms then call bootstrap.Modal.getOrCreateInstance(#modal) then call show()"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modal">
+                                Edit
+                            </button>
+                        {% else %}
+                            <span class="text-muted">Locked</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No timesheet entries found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

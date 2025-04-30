@@ -1,17 +1,60 @@
 from django import forms
-from core.models import Resource
+from core.models import Timesheet, Task, SubTask
 
-class TimesheetForm(forms.Form):
-    employee_id = forms.ModelChoiceField(
-        queryset=Resource.objects.none(),  # will be filtered in __init__
-        label='Employee',
-        required=True
-    )
+##working code without approval functionality
+
+class TimesheetForm(forms.ModelForm):
+    class Meta:
+        model = Timesheet
+        fields = ['project', 'task', 'subtask', 'task_description', 'hours']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        
+        # Dynamically populate subtasks based on selected task (if exists)
+        if 'task' in self.data:
+            try:
+                task_id = int(self.data.get('task'))
+                self.fields['subtask'].queryset = SubTask.objects.filter(task_id=task_id)
+            except (ValueError, TypeError):
+                self.fields['subtask'].queryset = SubTask.objects.none()
+        elif self.instance.pk and self.instance.task:
+            self.fields['subtask'].queryset = self.instance.task.subtasks.all()
+        else:
+            self.fields['subtask'].queryset = SubTask.objects.none()
 
-        if user:
-            # Assuming Resource.reporting_to is a ForeignKey to the logged-in manager
-            self.fields['employee_id'].queryset = Resource.objects.filter(reporting_to__user=user)
+class ApprovalForm(forms.ModelForm):
+    class Meta:
+        model = Timesheet
+        fields = ['status', 'review_comment']
+        widgets = {
+            'review_comment': forms.Textarea(attrs={'rows': 3}),
+        }
+        
+# class SelfTimesheetEditForm(forms.ModelForm):
+#     class Meta:
+#         model = Timesheet
+#         fields = ['project', 'task', 'subtask', 'task_description', 'hours']
+
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         if 'task' in self.data:
+#             try:
+#                 task_id = int(self.data.get('task'))
+#                 self.fields['subtask'].queryset = SubTask.objects.filter(task_id=task_id)
+#             except (ValueError, TypeError):
+#                 self.fields['subtask'].queryset = SubTask.objects.none()
+#         elif self.instance.pk and self.instance.task:
+#             self.fields['subtask'].queryset = self.instance.task.subtasks.all()
+#         else:
+#             self.fields['subtask'].queryset = SubTask.objects.none()
+
+
+# class TimesheetApprovalForm(forms.ModelForm):
+#     class Meta:
+#         model = Timesheet
+#         fields = ['status', 'review_comment']
+#         widgets = {
+#             'review_comment': forms.Textarea(attrs={'rows': 2}),
+#         }
+

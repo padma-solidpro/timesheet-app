@@ -1,0 +1,15 @@
+{% load widget_tweaks %}
+<form method="post" hx-post="{% url 'load_approval_form' form.instance.id %}" hx-target="#modal-body" hx-swap="outerHTML">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label>Status</label>
+        {{ form.status|add_class:"form-select" }}
+    </div>
+    <div class="mb-3">
+        <label>Review Comment</label>
+        {{ form.review_comment|add_class:"form-control" }}
+    </div>
+    <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-success">Save</button>
+    </div>
+</form>

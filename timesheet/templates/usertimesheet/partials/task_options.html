@@ -1,0 +1,12 @@
+<option value="">-- Select Task --</option>
+{% for id, name in tasks %}
+  <option value="{{ id }}" {% if selected_id|stringformat:"s" == id|stringformat:"s" %}selected{% endif %}>
+    {{ name }}
+  </option>
+{% endfor %}
+
+<!-- working code -->
+<!-- <option value="">-- Select Task --</option>
+{% for id, name in tasks %}
+<option value="{{ id }}">{{ name }}</option>
+{% endfor %} -->

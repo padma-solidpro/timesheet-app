@@ -1,0 +1,24 @@
+<tr>
+    <td>{{ timesheet.date }}</td>
+    <td>{{ timesheet.project.name }}</td>
+    <td>
+        {% if timesheet.task %} {{ timesheet.task.name }} {% endif %}
+        {% if timesheet.subtask %} → {{ timesheet.subtask.name }} {% endif %}
+        <br><small>{{ timesheet.task_description }}</small>
+    </td>
+    <td>{{ timesheet.hours }}</td>
+    <td>{{ timesheet.status }}</td>
+    <td>
+        {% if timesheet.status != 'Accepted' %}
+            <button class="btn btn-sm btn-primary"
+                    hx-get="{% url 'edit_timesheet' timesheet.id %}"
+                    hx-target="#modal-body"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modal">
+                Edit
+            </button>
+        {% else %}
+            <span class="text-muted">Locked</span>
+        {% endif %}
+    </td>
+</tr>

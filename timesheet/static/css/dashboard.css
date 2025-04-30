@@ -57,3 +57,32 @@ canvas {
     height: 100% !important;
     display: block;
 }
+
+/* General Styling for Canvas Elements */
+.chart-canvas {
+    width: 100% !important;   /* Make the canvas responsive */
+    height: 300px !important; /* Fixed height for consistent size */
+  }
+  
+  /* Specific Sections to Control Chart Size */
+  #loggedHoursSection .card, 
+  #workedHoursSummarySection .card,
+  #billableHoursSection .card, 
+  #allottedVsLoggedSection .card {
+    padding: 20px;            /* Add padding inside the cards */
+  }
+  
+  /* Adjust chart sizes for smaller screens */
+  @media (max-width: 768px) {
+    .chart-canvas {
+      height: 250px !important; /* Slightly smaller for mobile devices */
+    }
+  }
+  
+  /* For larger screens, increase chart size */
+  @media (min-width: 1200px) {
+    .chart-canvas {
+      height: 400px !important; /* Larger size on large screens */
+    }
+  }
+  

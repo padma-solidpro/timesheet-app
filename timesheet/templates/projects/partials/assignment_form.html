@@ -1,0 +1,36 @@
+{% load widget_tweaks %}
+<form method="post"
+      hx-post="{% url 'save_assignment' %}"
+      hx-target="#assignmentTable"
+      hx-swap="outerHTML"
+      hx-on="htmx:afterRequest: document.getElementById('assignmentModal').querySelector('.btn-close').click()">
+    {% csrf_token %}
+    <div class="mb-3">
+        {{ form.project.label_tag }} {{ form.project }}
+    </div>
+    <div class="mb-3">
+        {{ form.task.label_tag }}
+        {% render_field form.task class="form-select" %}
+    </div>
+    <div class="mb-3"
+        hx-get="{% url 'get_subtasks' %}"
+        hx-target="#subtask-wrapper"
+        hx-trigger="change from:select[name='task']"
+        hx-include="[name='task']">
+
+        {{ form.subtask.label_tag }}
+
+        <div id="subtask-wrapper">
+            {{ form.subtask }}
+        </div>
+    </div>
+    </div>
+    <div class="mb-3">
+        {{ form.allotted_hours.label_tag }} {{ form.allotted_hours }}
+    </div>
+
+    {% if form.instance.pk %}
+        <input type="hidden" name="assignment_id" value="{{ form.instance.pk }}">
+    {% endif %}
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>

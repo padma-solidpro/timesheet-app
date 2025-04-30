@@ -1,0 +1,9 @@
+<div id="subtask-wrapper">
+    <select name="subtask" class="form-select" id="id_subtask">
+        {% for subtask in subtasks %}
+            <option value="{{ subtask.id }}">{{ subtask.name }}</option>
+        {% empty %}
+            <option value="">No subtasks available</option>
+        {% endfor %}
+    </select>
+</div>
