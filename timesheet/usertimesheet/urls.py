@@ -11,4 +11,6 @@ urlpatterns = [
     path('edit/<int:pk>/', views.edit_timesheet, name='edit_timesheet'),
     path('approval/update/<int:pk>/', views.load_approval_form, name='load_approval_form'),
     path('entries/', views.timesheet_entries, name='timesheet_entries'),
+    path("bulk-update-approvals/", views.bulk_update_approvals, name="bulk_update_approvals"),
+
 ]

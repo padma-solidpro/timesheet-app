@@ -7,6 +7,8 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 from django.http import HttpResponse, HttpResponseBadRequest
 from .forms import TimesheetForm, ApprovalForm
+from django.contrib import messages
+
 
 @login_required
 def timesheet_view(request):
@@ -174,7 +176,14 @@ def edit_timesheet(request, pk):
 
         form = TimesheetForm(request.POST, instance=timesheet)
         if form.is_valid():
-            form.save()
+            # form.save()
+            updated_timesheet = form.save(commit=False)
+            
+            if updated_timesheet.status == 'Rejected':
+                updated_timesheet.status = 'Pending'
+
+            updated_timesheet.save()
+            
             return HttpResponse(status=204, headers={'HX-Trigger': 'timesheetUpdated'})
             # return render(request, 'usertimesheet/partials/success_message.html')
         else:
@@ -228,6 +237,31 @@ def add_timesheet_row(request):
     return render(request, "usertimesheet/partials/timesheet_form_row.html", context)
 
 
+def bulk_update_approvals(request):
+    record_ids = request.POST.getlist("record_ids")
+    action = request.POST.get("action")
+
+    if not record_ids or not action:
+        messages.error(request, "Please select records and an action.")
+        return redirect("timesheet")  # or return the table partial again
+
+    for record_id in record_ids:
+        try:
+            record = Timesheet.objects.get(id=record_id)
+            comment = request.POST.get(f"review_comment_{record_id}", "")
+            record.status = action
+            record.review_comment = comment
+            record.save()
+        except Timesheet.DoesNotExist:
+            continue
+
+    messages.success(request, f"{len(record_ids)} record(s) updated.")
+
+    # Return updated table
+    approval_records = Timesheet.objects.filter(status="Pending")
+    return render(request, "usertimesheet/partials/approval_entries_table.html", {
+        "approval_records": approval_records
+    })
 
 
 # working logic of approval projects filet

@@ -1,0 +1,53 @@
+<table class="table table-bordered table-striped table-sm">
+    <thead class="table-light">
+        <tr>
+            <th><input type="checkbox" id="select-all"></th>
+            <th>Employee</th>
+            <th>Project</th>
+            <th>Task</th>
+            <th>Date</th>
+            <th>Hours</th>
+            <th>Status</th>
+            <th>Review Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in approval_records %}
+        <tr>
+            <td>
+                <input type="checkbox" name="record_ids" value="{{ record.id }}">
+            </td>
+            <td>{{ record.resource.name }}</td>
+            <td>{{ record.project.name }}</td>
+            <td>{{ record.task_description }}</td>
+            <td>{{ record.date }}</td>
+            <td>{{ record.hours }}</td>
+            <td>{{ record.status }}</td>
+            <td>
+                <input type="text" 
+                       name="review_comment_{{ record.id }}" 
+                       class="form-control form-control-sm" 
+                       value="{{ record.review_comment|default:'' }}">
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" class="text-center">No pending records.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+  // Optional: Select/Deselect All checkboxes
+  document.addEventListener('DOMContentLoaded', function () {
+      const selectAll = document.getElementById('select-all');
+      if (selectAll) {
+          selectAll.addEventListener('change', function () {
+              document.querySelectorAll('input[name="record_ids"]').forEach(cb => {
+                  cb.checked = this.checked;
+              });
+          });
+      }
+  });
+</script>
