@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'accounts',
     'dashboard',
     'core',
+    'reports',
     'widget_tweaks',
     'crispy_forms',
     'taskmanager',

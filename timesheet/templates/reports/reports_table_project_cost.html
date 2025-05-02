@@ -1,0 +1,119 @@
+{% load report_filters %}
+<div style="overflow-x: auto;">
+  <table id="projectCostTable" class="display report-table">
+    <thead>
+      <tr>
+        {% for header in table_headers %}
+          <th class="header-cell">
+            <div class="header-stack">
+              <span>{{ header.title }}</span>
+              {% if header.title in "Client Name,Project Name,Client,Status" %}
+                <select data-column="{{ forloop.counter0 }}" class="filter-select">
+                  <option value="">All</option>
+                  {% for row in report_data|unique_values:header.data %}
+                    <option value="{{ row.key }}">{{ row.key }}</option>
+                  {% endfor %}
+                </select>
+              {% endif %}
+            </div>
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in report_data %}
+        <tr>
+          {% for header in table_headers %}
+            <td class="report-col">{{ row|get_item:header.data }}</td>
+          {% endfor %}
+        </tr>
+      {% empty %}
+        <tr><td colspan="{{ table_headers|length }}" class="text-center">No data available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+  }
+
+  .header-cell {
+    min-width: 150px;
+    padding: 8px;
+    vertical-align: top;
+    text-align: left;
+    background-color: white;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-weight: bold;
+    box-sizing: border-box;
+  }
+
+  .header-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .header-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .filter-select {
+    font-size: 12px;
+    padding: 4px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .report-col {
+    min-width: 150px;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    box-sizing: border-box;
+  }
+
+  .report-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+</style>
+
+<script>
+  $(document).ready(function () {
+    const table = $('#projectCostTable').DataTable({
+      dom: 'Blfrtip',
+      searching: false,
+      lengthChange: true,
+      buttons: [{ extend: 'csv', text: 'Download CSV' }],
+      scrollX: true,
+      columnDefs: [
+        { targets: [0, 1, 2], orderable: false } // Disable sorting for Project Name, Client, Status
+      ],
+      initComplete: function () {
+        this.api().columns().every(function () {
+          const column = this;
+          const index = column.index();
+
+          // Apply filter dropdowns
+          $('select[data-column="' + index + '"]').on('change', function () {
+            const val = $.fn.dataTable.util.escapeRegex($(this).val());
+            column.search(val ? '^' + val + '$' : '', true, false).draw();
+          });
+        });
+      }
+    });
+  });
+</script>

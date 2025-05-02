@@ -1,26 +1,33 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>Reports</h3>
-        <div>
-            <label for="reportType" class="form-label me-2">Select Report Type:</label>
-            <select name="report_type" id="reportType" class="form-select d-inline-block w-auto"
-                    hx-get="{% url 'report_data' %}"
-                    hx-target="#report-content"
-                    hx-trigger="change"
-                    hx-include="[name='report_type']">
-                <option value="project" selected>Project Cost Tracking</option>
-                <option value="department">Department-wise Report</option>
-                <option value="employee">Employee Utilization</option>
-            </select>
-        </div>
-    </div>
+  <h1>Reports</h1>
 
-    <div id="report-content" hx-get="{% url 'report_data' %}" hx-include="[name='report_type']" hx-trigger="load">
-        <!-- Report content will load here via HTMX -->
-    </div>
-</div>
+  <div style="display: flex; align-items: center; margin-bottom: 10px;">
+    <label for="report_type" style="margin-right: 10px;">Select Report:</label>
+    <select id="report_type" style="padding: 6px; font-size: 14px;">
+      <option value="project_cost_tracking" {% if report_type == 'project_cost_tracking' %}selected{% endif %}>Project Cost Tracking</option>
+    </select>
+    <!-- <div style="margin-left: 20px;">
+      <button id="download_csv_button" style="padding: 8px 12px; font-size: 14px;">Download CSV</button>
+    </div> -->
+  </div>
+
+  <div id="report_table_container">
+    {% include template_name %}
+  </div>
+
+  <script>
+    $(document).ready(function() {
+      $('#report_type').on('change', function() {
+        var selectedReport = $(this).val();
+        window.location.href = '/reports/?report_type=' + selectedReport;
+      });
+
+      // Trigger CSV download on button click (you might need to adjust this based on DataTables' button handling)
+      $('#download_csv_button').on('click', function() {
+        $('.buttons-csv')[0].click(); // Programmatically click the DataTables CSV button
+      });
+    });
+  </script>
 {% endblock %}
