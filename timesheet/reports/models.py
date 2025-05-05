@@ -22,7 +22,8 @@ class ProjectReportMV(models.Model):
         db_table = "project_report1_mv"
 
 class ProjectTaskTracking(models.Model):
-    project_name = models.CharField(max_length=50)
+    project_id = models.IntegerField(primary_key=True)
+    project_name = models.CharField(max_length=50,)
     task_name = models.CharField(max_length=50)
     task_status = models.CharField(max_length=50)
     worked_hours = models.FloatField()
@@ -32,11 +33,11 @@ class ProjectTaskTracking(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'project_task_tracking1_mv'
+        db_table = 'project_task_trakcing_mv'
 
 
 class EmployeeUtilizationMV(models.Model):
-    emp_id = models.CharField(max_length=50)
+    emp_id = models.CharField(max_length=50, primary_key=True)
     emp_name = models.CharField(max_length=255)
     date = models.DateField()
     project_id = models.IntegerField()

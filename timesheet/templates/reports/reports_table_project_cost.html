@@ -1,13 +1,13 @@
 {% load report_filters %}
 <div style="overflow-x: auto;">
-  <table id="projectCostTable" class="display report-table">
+  <table id="{{ report_type }}Table" class="display report-table">
     <thead>
       <tr>
         {% for header in table_headers %}
           <th class="header-cell">
             <div class="header-stack">
               <span>{{ header.title }}</span>
-              {% if header.title in "Client Name,Project Name,Client,Status" %}
+              {% if header.title in filterable_columns %}
                 <select data-column="{{ forloop.counter0 }}" class="filter-select">
                   <option value="">All</option>
                   {% for row in report_data|unique_values:header.data %}
@@ -24,7 +24,7 @@
       {% for row in report_data %}
         <tr>
           {% for header in table_headers %}
-            <td class="report-col">{{ row|get_item:header.data }}</td>
+            <td class="report-col">{{ row|get_item:header.data|default:"-"  }}</td>
           {% endfor %}
         </tr>
       {% empty %}
@@ -90,30 +90,48 @@
     text-align: center;
   }
 </style>
-
 <script>
-  $(document).ready(function () {
-    const table = $('#projectCostTable').DataTable({
+  document.addEventListener("DOMContentLoaded", function () {
+    const tableId = "{{ report_type|slugify }}Table";
+    const tableSelector = "#" + tableId;
+
+    if (!document.querySelector(tableSelector)) return;
+
+    // Destroy existing DataTable if any
+    if ($.fn.DataTable.isDataTable(tableSelector)) {
+      $(tableSelector).DataTable().clear().destroy();
+    }
+
+    const hasData = {{ has_data|yesno:"true,false" }};
+    const unsortable = {{ unsortable_columns|safe }};
+    const headers = {{ table_headers|safe }};
+    const columnDefs = headers.map((h, idx) => ({
+      targets: idx,
+      orderable: !unsortable.includes(h.title)
+    }));
+
+    $(tableSelector).DataTable({
       dom: 'Blfrtip',
       searching: false,
       lengthChange: true,
-      buttons: [{ extend: 'csv', text: 'Download CSV' }],
+      buttons: hasData ? [{ extend: 'csv', text: 'Download CSV' }] : [],
       scrollX: true,
-      columnDefs: [
-        { targets: [0, 1, 2], orderable: false } // Disable sorting for Project Name, Client, Status
-      ],
+      paging: hasData,
+      info: hasData,
+      columnDefs: columnDefs,
       initComplete: function () {
-        this.api().columns().every(function () {
-          const column = this;
-          const index = column.index();
-
-          // Apply filter dropdowns
-          $('select[data-column="' + index + '"]').on('change', function () {
-            const val = $.fn.dataTable.util.escapeRegex($(this).val());
-            column.search(val ? '^' + val + '$' : '', true, false).draw();
+        if (hasData) {
+          this.api().columns().every(function () {
+            const column = this;
+            const index = column.index();
+            $('select[data-column="' + index + '"]').on('change', function () {
+              const val = $.fn.dataTable.util.escapeRegex($(this).val());
+              column.search(val ? '^' + val + '$' : '', true, false).draw();
+            });
           });
-        });
+        }
       }
     });
   });
 </script>
+

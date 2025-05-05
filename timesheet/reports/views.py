@@ -1,6 +1,9 @@
 from django.shortcuts import render
-from .models import ProjectReportMV
+from .models import ProjectReportMV, ProjectTaskTracking, EmployeeUtilizationMV
 from decimal import Decimal
+from datetime import date, timedelta
+from collections import defaultdict
+from django.db.models import Q
 
 def reports_view(request):
     report_type = request.GET.get('report_type', 'project_cost_tracking')
@@ -57,14 +60,147 @@ def reports_view(request):
             {'title': '# Resources', 'data': 'num_resources_assigned'},
             {'title': 'Project Lead', 'data': 'project_lead_name'},
         ]
+
+        filterable_columns = ['Client Name', 'Project Name', 'Status']
+        unsortable_columns = ['Client Name', 'Project Name', 'Status']
+
         template_name = 'reports/reports_table_project_cost.html'
 
+    elif report_type == 'project_task_tracking':
+        queryset = ProjectTaskTracking.objects.all()
+        report_data_list = []
+        for item in queryset:
+            data = {
+                'project_name': item.project_name,
+                'task_name': item.task_name,                
+                'task_status': item.task_status,
+                'allotted_hours': item.allotted_hours if item.allotted_hours is not None else Decimal('0.00'),
+                'worked_hours': item.worked_hours if item.worked_hours is not None else Decimal('0.00'),
+                'remaining_hours': item.remaining_hours if item.remaining_hours is not None else Decimal('0.00'),   
+                'cost_spent': item.cost_spent if item.cost_spent is not None else Decimal('0.00'),   
+            }
+            # Format decimal fields to 2 decimal places as strings for consistent display
+            for key in ['allotted_hours', 'worked_hours', 'remaining_hours', 'cost_spent']:
+                if isinstance(data[key], Decimal):
+                    data[key] = "{:.2f}".format(data[key])
+                elif isinstance(data[key], (int, float)):
+                    data[key] = "{:.2f}".format(Decimal(str(data[key])))
+                else:
+                    data[key] = '0.00' # Default if None or other unexpected type
+
+            report_data_list.append(data)
+
+        report_data = report_data_list
+
+        table_headers = [
+            {'title': 'Project Name', 'data': 'project_name'},
+            {'title': 'Task Name', 'data': 'task_name'},
+            {'title': 'Status', 'data': 'task_status'},
+            {'title': 'Allotted Hours', 'data': 'allotted_hours'},
+            {'title': 'Worked Hours', 'data': 'worked_hours'},
+            {'title': 'Remaining Hours', 'data': 'remaining_hours'},
+            {'title': 'Cost Spent', 'data': 'cost_spent'},
+        ]
+
+        filterable_columns = ['Task Name', 'Project Name', 'Status']
+        unsortable_columns = ['Task Name', 'Project Name', 'Status']
+        
+        template_name = 'reports/reports_table_project_cost.html'
+
+    elif report_type == 'employee_utilization':
+
+        # Default date range: current month
+        today = date.today()
+        default_start = today.replace(day=1)
+        default_end = (default_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+        # Get date range from request
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        start_date = date.fromisoformat(start_date_str) if start_date_str else default_start
+        end_date = date.fromisoformat(end_date_str) if end_date_str else default_end
+
+        qs = EmployeeUtilizationMV.objects.filter(date__range=(start_date, end_date))
+
+        # Group data by employee
+        emp_data = defaultdict(lambda: {
+            'emp_name': '',
+            'total_hours': Decimal('0.0'),
+            'billable_hours': Decimal('0.0'),
+            'non_billable_hours': Decimal('0.0'),
+            'leave_hours': Decimal('0.0'),
+            'billable_cost': Decimal('0.0'),
+            'non_billable_cost': Decimal('0.0'),
+            'working_days': set(),
+        })
+
+        for row in qs:
+            emp = emp_data[row.emp_id]
+            emp['emp_name'] = row.emp_name
+            emp['working_days'].add(row.date)
+
+            hours_worked = Decimal(row.hours_worked or 0)
+            cost_spent = Decimal(row.cost_spent or 0)
+
+            if row.project_name.lower() == 'leave':
+                emp['leave_hours'] += hours_worked
+            else:
+                if row.is_working_day:
+                    emp['total_hours'] += hours_worked
+                if row.commercial.lower() == 'billable':
+                    emp['billable_hours'] += hours_worked
+                    emp['billable_cost'] += cost_spent
+                elif row.commercial.lower() == 'non-billable':
+                    emp['non_billable_hours'] += hours_worked
+                    emp['non_billable_cost'] += cost_spent
+
+        report_data_list = []
+        for emp_id, data in emp_data.items():
+            total_available = Decimal(len(data['working_days']) * 8) - data['leave_hours']
+            utilization = (data['billable_hours'] / total_available * 100) if total_available > 0 else Decimal('0.0')
+
+            report_data_list.append({
+                'emp_id': emp_id,
+                'emp_name': data['emp_name'],
+                'total_hours': f"{data['total_hours']:.2f}",
+                'billable_hours': f"{data['billable_hours']:.2f}",
+                'non_billable_hours': f"{data['non_billable_hours']:.2f}",
+                'leave_hours': f"{data['leave_hours']:.2f}",
+                'billable_cost': f"{data['billable_cost']:.2f}",
+                'non_billable_cost': f"{data['non_billable_cost']:.2f}",
+                'utilization_percent': f"{utilization:.2f}",
+            })
+
+        report_data = report_data_list
+        table_headers = [
+            {'title': 'Employee ID', 'data': 'emp_id'},
+            {'title': 'Employee Name', 'data': 'emp_name'},
+            {'title': 'Total Hours', 'data': 'total_hours'},
+            {'title': 'Billable Hours', 'data': 'billable_hours'},
+            {'title': 'Non-Billable Hours', 'data': 'non_billable_hours'},
+            {'title': 'Leave Hours', 'data': 'leave_hours'},
+            {'title': 'Billable Cost', 'data': 'billable_cost'},
+            {'title': 'Non-Billable Cost', 'data': 'non_billable_cost'},
+            {'title': 'Utilization %', 'data': 'utilization_percent'},
+        ]
+        filterable_columns = ['Employee Name']
+        unsortable_columns = ['Employee Name']
+        template_name = 'reports/reports_table_project_cost.html'
+
+        
+            
     context = {
         'report_type': report_type,
+        'template_name': template_name,
+
         'report_data': report_data,
         'table_headers': table_headers,
-        'template_name': template_name,
+        'filterable_columns': filterable_columns,
+        'unsortable_columns': unsortable_columns,
+        'has_data': bool(report_data),
+
     }
+    # return render(request, 'reports_table_project_cost.html', context)
     return render(request, 'reports/reports.html', context)
 
 

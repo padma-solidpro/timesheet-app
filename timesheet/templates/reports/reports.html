@@ -3,31 +3,53 @@
 {% block content %}
   <h1>Reports</h1>
 
-  <div style="display: flex; align-items: center; margin-bottom: 10px;">
-    <label for="report_type" style="margin-right: 10px;">Select Report:</label>
-    <select id="report_type" style="padding: 6px; font-size: 14px;">
-      <option value="project_cost_tracking" {% if report_type == 'project_cost_tracking' %}selected{% endif %}>Project Cost Tracking</option>
-    </select>
-    <!-- <div style="margin-left: 20px;">
-      <button id="download_csv_button" style="padding: 8px 12px; font-size: 14px;">Download CSV</button>
-    </div> -->
-  </div>
+  <!-- Filter Form -->
+  <form id="filter-form" method="get" style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+    <!-- Report Type Dropdown -->
+    <div>
+      <label for="report_type" style="margin-right: 8px;">Select Report:</label>
+      <select id="report_type" name="report_type" style="padding: 6px; font-size: 14px;">
+        <option value="project_cost_tracking" {% if report_type == 'project_cost_tracking' %}selected{% endif %}>Project Cost Tracking</option>
+        <option value="project_task_tracking" {% if report_type == 'project_task_tracking' %}selected{% endif %}>Project Task Tracking</option>
+        <option value="employee_utilization" {% if report_type == 'employee_utilization' %}selected{% endif %}>Employee Utilization</option>
+      </select>
+    </div>
 
+    <!-- Date Range Filter (only for employee_utilization) -->
+    {% if report_type == 'employee_utilization' %}
+    <div>
+      <label for="start_date" style="margin-right: 5px;">Start:</label>
+      <input type="date" name="start_date" id="start_date" value="{{ request.GET.start_date|default:'' }}">
+    </div>
+    <div>
+      <label for="end_date" style="margin-right: 5px;">End:</label>
+      <input type="date" name="end_date" id="end_date" value="{{ request.GET.end_date|default:'' }}">
+    </div>
+    <div>
+      <button type="submit" style="padding: 6px 12px;">Apply</button>
+    </div>
+    {% endif %}
+  </form>
+
+  <!-- Report Table -->
   <div id="report_table_container">
     {% include template_name %}
   </div>
 
   <script>
-    $(document).ready(function() {
-      $('#report_type').on('change', function() {
-        var selectedReport = $(this).val();
-        window.location.href = '/reports/?report_type=' + selectedReport;
+    $(document).ready(function () {
+      // When report type is changed, reload page with selected type
+      $('#report_type').on('change', function () {
+        const selectedReport = $(this).val();
+        const url = new URL(window.location.href);
+        url.searchParams.set('report_type', selectedReport);
+        // Remove any existing date filters when switching reports
+        url.searchParams.delete('start_date');
+        url.searchParams.delete('end_date');
+        window.location.href = url.toString();
       });
 
-      // Trigger CSV download on button click (you might need to adjust this based on DataTables' button handling)
-      $('#download_csv_button').on('click', function() {
-        $('.buttons-csv')[0].click(); // Programmatically click the DataTables CSV button
-      });
     });
   </script>
 {% endblock %}
+
