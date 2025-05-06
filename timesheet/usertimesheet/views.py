@@ -245,20 +245,24 @@ def bulk_update_approvals(request):
         messages.error(request, "Please select records and an action.")
         return redirect("timesheet")  # or return the table partial again
 
+    reviewer = request.user.resource
+
     for record_id in record_ids:
         try:
             record = Timesheet.objects.get(id=record_id)
             comment = request.POST.get(f"review_comment_{record_id}", "")
             record.status = action
             record.review_comment = comment
+            record.reviewed_by = reviewer
+            record.reviewed_on = timezone.now()
             record.save()
         except Timesheet.DoesNotExist:
             continue
 
-    messages.success(request, f"{len(record_ids)} record(s) updated.")
+    # messages.success(request, f"{len(record_ids)} record(s) updated.")
 
     # Return updated table
-    approval_records = Timesheet.objects.filter(status="Pending")
+    approval_records = Timesheet.objects.filter(status__in=["Pending", "Rejected"])
     return render(request, "usertimesheet/partials/approval_entries_table.html", {
         "approval_records": approval_records
     })

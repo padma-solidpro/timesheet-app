@@ -8,6 +8,7 @@
                 <th>Subtask</th>
                 <th>Description</th>
                 <th>Hours</th>
+                <th>Review Comment</th>
                 <th>Status</th>
                 <th>Action</th>
             </tr>
@@ -34,6 +35,7 @@
                     </td>
                     <td>{{ entry.task_description }}</td>
                     <td>{{ entry.hours }}</td>
+                    <td>{{ entry.review_comment }}</td>
                     <td>
                         {% if entry.status == 'Approved' %}
                             <span class="badge bg-success">Approved</span>

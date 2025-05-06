@@ -2,6 +2,7 @@
     <thead class="table-light">
         <tr>
             <th><input type="checkbox" id="select-all"></th>
+            <th>Date</th>
             <th>Employee</th>
             <th>Project</th>
             <th>Task</th>
@@ -17,6 +18,7 @@
             <td>
                 <input type="checkbox" name="record_ids" value="{{ record.id }}">
             </td>
+            <td>{{ record.date }}</td>
             <td>{{ record.resource.name }}</td>
             <td>{{ record.project.name }}</td>
             <td>{{ record.task_description }}</td>
