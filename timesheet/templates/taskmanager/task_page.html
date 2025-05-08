@@ -5,8 +5,7 @@
 {% csrf_token %}
 <div class="container mt-4">
   <div class="d-flex justify-content-between mb-3">
-    <h2>Task Manager</h2>
-    <div>
+    <h3 class="page-header">Task Manager</h3>
       <!-- ✅ Single clean Add Task button (HTMX modal trigger) -->
       <button class="btn btn-primary"
               hx-get="{% url 'cascading_task_form' %}"

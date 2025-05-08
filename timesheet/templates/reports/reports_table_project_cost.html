@@ -1,21 +1,30 @@
 {% load report_filters %}
 <div style="overflow-x: auto;">
-  <table id="{{ report_type }}Table" class="display report-table">
+  <table id="{{ report_type }}Table" class="table display-report-table">
     <thead>
-      <tr>
+      <!-- Sortable Header Row -->
+      <tr class="header-dark">
         {% for header in table_headers %}
           <th class="header-cell">
             <div class="header-stack">
               <span>{{ header.title }}</span>
-              {% if header.title in filterable_columns %}
-                <select data-column="{{ forloop.counter0 }}" class="filter-select">
-                  <option value="">All</option>
-                  {% for row in report_data|unique_values:header.data %}
-                    <option value="{{ row.key }}">{{ row.key }}</option>
-                  {% endfor %}
-                </select>
-              {% endif %}
             </div>
+          </th>
+        {% endfor %}
+      </tr>
+    
+      <!-- Filter Row -->
+      <tr class="header-light">
+        {% for header in table_headers %}
+          <th>
+            {% if header.title in filterable_columns %}
+              <select data-column="{{ forloop.counter0 }}" class="form-select form-select-sm filter">
+                <option value="">All</option>
+                {% for row in report_data|unique_values:header.data %}
+                  <option value="{{ row.key }}">{{ row.key }}</option>
+                {% endfor %}
+              </select>
+            {% endif %}
           </th>
         {% endfor %}
       </tr>
@@ -34,62 +43,7 @@
   </table>
 </div>
 
-<style>
-  .report-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: Arial, sans-serif;
-    font-size: 13px;
-  }
 
-  .header-cell {
-    min-width: 150px;
-    padding: 8px;
-    vertical-align: top;
-    text-align: left;
-    background-color: white;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    font-weight: bold;
-    box-sizing: border-box;
-  }
-
-  .header-tools {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-  }
-
-  .header-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .filter-select {
-    font-size: 12px;
-    padding: 4px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .report-col {
-    min-width: 150px;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-    box-sizing: border-box;
-  }
-
-  .report-table tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-  }
-
-  .text-center {
-    text-align: center;
-  }
-</style>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const tableId = "{{ report_type|slugify }}Table";
@@ -111,10 +65,16 @@
     }));
 
     $(tableSelector).DataTable({
-      dom: 'Blfrtip',
-      searching: false,
+      dom: 'Blrtip',
+      orderCellsTop: true, // crucial when using multiple header rows
+      fixedHeader: true,
+      searching: true,
       lengthChange: true,
-      buttons: hasData ? [{ extend: 'csv', text: 'Download CSV' }] : [],
+      buttons: hasData ? [{
+        extend: 'csv',
+        text: '<i class="fas fa-download me-2"></i> Download Report',
+        className: 'btn btn-success dt-custom-download'
+      }] : [],
       scrollX: true,
       paging: hasData,
       info: hasData,

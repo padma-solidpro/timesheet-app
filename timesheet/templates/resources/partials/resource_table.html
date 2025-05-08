@@ -1,6 +1,6 @@
 <table class="table table-striped">
     <thead>
-        <tr>
+        <tr class="header-dark">
 
             <th>Emp ID</th>
             <th>Name</th>
@@ -21,7 +21,7 @@
             <td>{{ resource.email }}</td>
             <td>{{ resource.department }}</td>
             <td>{{ resource.role }}</td>
-            <td>
+            <td class="project-cell">
                 {% for project in resource.assigned_projects.all %}
                     <span class="badge bg-secondary">{{ project.name }}</span>
                 {% empty %}
@@ -51,3 +51,13 @@
         {% endfor %}
     </tbody>
 </table>
+
+<style>
+    td.project-cell {
+        max-width: 200px;       /* or any fixed width suitable for your table */
+        max-height: 3.5em;      /* approx. 2 lines of text */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+}
+</style>

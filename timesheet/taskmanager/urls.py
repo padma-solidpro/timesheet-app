@@ -4,7 +4,8 @@ from . import views
 
 urlpatterns = [
     path('', views.task_page, name='taskmanager'),
-
+    path('add/full-task/', views.cascading_task_form, name='cascading_task_form'),
+    
     # Category
     path('add/category/', views.add_category, name='add_category'),
     path('edit/category/<int:pk>/', views.edit_category, name='edit_category'),
@@ -23,5 +24,6 @@ urlpatterns = [
     # HTMX dynamic cascading form
     path('load-tasks/', views.load_tasks_for_category, name='load_tasks_for_category'),
     path('save-full-task/', views.save_full_task, name='save_full_task'),
-    path('add/full-task/', views.cascading_task_form, name='cascading_task_form'),
+
+    
 ] 

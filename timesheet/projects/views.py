@@ -75,6 +75,7 @@ def client_table(request):
     clients = Client.objects.all()
     return render(request, "projects/partials/client_table.html", {"clients": clients})
 
+
 def project_table(request):
     projects = Project.objects.all()
     return render(request, "projects/partials/project_table.html", {"projects": projects})

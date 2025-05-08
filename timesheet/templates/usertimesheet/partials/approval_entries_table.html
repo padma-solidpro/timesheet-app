@@ -1,55 +1,129 @@
-<table class="table table-bordered table-striped table-sm">
-    <thead class="table-light">
-        <tr>
-            <th><input type="checkbox" id="select-all"></th>
-            <th>Date</th>
-            <th>Employee</th>
-            <th>Project</th>
-            <th>Task</th>
-            <th>Date</th>
-            <th>Hours</th>
-            <th>Status</th>
-            <th>Review Comment</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for record in approval_records %}
-        <tr>
-            <td>
-                <input type="checkbox" name="record_ids" value="{{ record.id }}">
-            </td>
-            <td>{{ record.date }}</td>
-            <td>{{ record.resource.name }}</td>
-            <td>{{ record.project.name }}</td>
-            <td>{{ record.task_description }}</td>
-            <td>{{ record.date }}</td>
-            <td>{{ record.hours }}</td>
-            <td>{{ record.status }}</td>
-            <td>
-                <input type="text" 
-                       name="review_comment_{{ record.id }}" 
-                       class="form-control form-control-sm" 
-                       value="{{ record.review_comment|default:'' }}">
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="8" class="text-center">No pending records.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-wrapper">
+    <table id="approval-table" class="table table-sm align-middle approval-table">
+        <thead class="table-light">
+            <tr class="header-dark">
+              <th><input type="checkbox" id="select-all"></th>
+              <th>Date</th>
+              <th>Employee</th>
+              <th>Project</th>
+              <th>Task</th>
+              <th>Hours</th>
+              <th>Status</th>
+              <th>Review Comment</th>
+            </tr>
+            <tr class="header-light">
+                <th></th>
+                <th></th>
+                <th>
+                    <select class="form-select form-select-sm filter" data-column="2">
+                        <option value="">All</option>
+                    </select>
+                </th>
+                <th>
+                    <select class="form-select form-select-sm filter" data-column="3">
+                        <option value="">All</option>
+                    </select>
+                </th>
+                <th></th>
+                <th></th>
+                <th>
+                    <select class="form-select form-select-sm filter" data-column="6">
+                        <option value="">All</option>
+                    </select>
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if approval_records %}
+                {% for record in approval_records %}
+                <tr>
+                    <td><input type="checkbox" name="record_ids" value="{{ record.id }}"></td>
+                    <td>{{ record.date }}</td>
+                    <td>{{ record.resource.name }}</td>
+                    <td>{{ record.project.name }}</td>
+                    <td>{{ record.task }}</td>
+                    <td>{{ record.hours }}</td>
+                    <td>{{ record.status }}</td>
+                    <td>
+                        <input type="text" name="review_comment_{{ record.id }}"
+                            class="form-control form-control-sm"
+                            value="{{ record.review_comment|default:'' }}">
+                    </td>
+                </tr>
+                {% empty %}
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No timesheet entries found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    #approval-table_wrapper {
+        overflow-x: hidden;
+    }
+</style>
+
 
 <script>
-  // Optional: Select/Deselect All checkboxes
-  document.addEventListener('DOMContentLoaded', function () {
-      const selectAll = document.getElementById('select-all');
-      if (selectAll) {
-          selectAll.addEventListener('change', function () {
-              document.querySelectorAll('input[name="record_ids"]').forEach(cb => {
-                  cb.checked = this.checked;
-              });
-          });
-      }
-  });
+    document.addEventListener('DOMContentLoaded', function () {
+        const hasData = {{ aprv_has_data|yesno:"true,false" }};
+
+        if (!hasData) return;  // ⛔ Prevent DataTable initialization entirely
+
+        const tableElement = $('#approval-table');
+        const table = tableElement.DataTable({
+            dom: 'lrtip',
+            orderCellsTop: true,
+            searching: true,
+            lengthChange: false,
+            fixedHeader: true,
+            pageLength: 10,
+            order: [[1, 'desc']],
+            columnDefs: [
+                { targets: [0, 2, 3, 4, 5, 6, 7], orderable: false },
+            ],
+            initComplete: function () {
+                const api = this.api();
+
+                // Set up dropdown filters
+                [2, 3, 6].forEach(function (colIndex) {
+                    const column = api.column(colIndex);
+                    const select = $('select[data-column="' + colIndex + '"]');
+
+                    column.data().unique().sort().each(function (d) {
+                        if (d && select.find('option[value="' + d + '"]').length === 0) {
+                            select.append('<option value="' + d + '">' + d + '</option>');
+                        }
+                    });
+
+                    select.on('change', function () {
+                        const val = $.fn.dataTable.util.escapeRegex($(this).val());
+                        column.search(val ? '^' + val + '$' : '', true, false).draw();
+                    });
+                });
+
+                // Optional URL param filter
+                const urlParams = new URLSearchParams(window.location.search);
+                const status = urlParams.get('status');
+                if (status) {
+                    const statusSelect = $('select[data-column="6"]');
+                    statusSelect.val(status).trigger('change');
+                    const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                }
+            }
+        });
+
+        // Select-all checkbox
+        document.getElementById('select-all')?.addEventListener('change', function () {
+            document.querySelectorAll('input[name="record_ids"]').forEach(cb => {
+                cb.checked = this.checked;
+            });
+        });
+    });
 </script>

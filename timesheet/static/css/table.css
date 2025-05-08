@@ -1,0 +1,212 @@
+:root {
+    /* Define custom font sizes and theme variables */
+    --font-size-header: 0.95rem;
+    --font-size-body: 0.9rem;
+    --font-size-page-header: 1.5rem;
+    --font-size-sub-header: 1rem;
+    --bs-border-radius: 0.375rem;
+    --my-table-row-odd: #ffffff;
+    --my-table-row-even: #f0f0f5;
+}
+
+/* Font size for sub-section headers */
+.sub-header {
+    font-size: var(--font-size-sub-header) !important;
+}
+
+/* Font size for main page headers */
+.page-header {
+    font-size: var(--font-size-page-header) !important;
+}
+
+/* Font style for buttons, labels, and dropdowns */
+.btn, label, #report_type {
+    font-size: var(--font-size-header) !important;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Set max height and scroll for tab content (e.g., timesheet table) */
+#timesheetTabsContent {
+    height: 310px;
+    overflow-y: auto;
+}
+
+/* Remove all borders in table-bordered */
+.table-bordered, 
+.table-bordered th, 
+.table-bordered td {
+    border: none !important;
+}
+
+/* Add only bottom border to table cells */
+.table-bordered th, 
+.table-bordered td {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+/* Dark-themed table header style */
+table > thead > tr.header-dark > th {
+    background-color: #04004b !important;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    font-size: var(--font-size-header);
+    text-align: center;
+    padding: 0.75rem;
+    border-bottom: 2px solid white;
+}
+
+/* Light-themed table header style */
+table > thead > tr.header-light > th {
+    background-color: #f8f9fa !important;
+    color: black;
+    font-family: 'Arial', sans-serif;
+    font-weight: 400 !important;
+    font-size: var(--font-size-header) !important;
+    text-align: center;
+    padding: 0.75rem;
+    border-bottom: 2px solid white;
+}
+
+/* Table row background colors (odd rows) */
+.table tbody tr.odd > *,
+.table tbody tr:nth-of-type(odd) > * {
+    background-color: var(--my-table-row-odd) !important;
+}
+
+/* Table row background colors (even rows) */
+.table tbody tr.even > *,
+.table tbody tr:nth-of-type(even) > * {
+    background-color: var(--my-table-row-even) !important;
+}
+
+/* For .table-striped tables, override odd row background color */
+.table.table-striped tbody tr:nth-of-type(odd) > td {
+    --bs-table-bg-type: var(--my-table-row-odd) !important;
+}
+
+/* For .table-striped tables, override even row background color */
+.table.table-striped tbody tr:nth-of-type(even) > td {
+    --bs-table-bg-type: var(--my-table-row-even) !important;
+}
+
+/* Styling for filter dropdowns in headers */
+select.form-select.form-select-sm.filter, 
+select.form-select-sm.me-2 {
+    font-size: var(--font-size-body);
+    font-family: 'Arial', sans-serif;
+}
+
+/* Table body cell styles */
+table tbody td {
+    font-size: var(--font-size-body);
+    font-family: 'Arial', sans-serif;
+    text-align: center;
+    font-weight: 400 !important;
+}
+
+/* Ensure sorting icons are visible */
+th.sorting::before,
+th.sorting::after {
+    opacity: 1 !important;
+    color: #000;
+    background-color: #fff;
+}
+
+/* Keep sort icons visible for active sort state */
+table.dataTable thead > tr > th.sorting_asc::before,
+table.dataTable thead > tr > th.sorting_desc::after,
+table.dataTable thead > tr > td.sorting_asc::before,
+table.dataTable thead > tr > td.sorting_desc::after {
+    opacity: 1 !important;
+    color: #000;
+    background-color: #fff;
+}
+
+/* Align elements horizontally in header stack */
+.header-stack {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Uniform font size for small form inputs and textareas */
+select.form-select-sm,
+input.form-control,
+select.form-control,
+textarea.form-control {
+    font-size: var(--font-size-body) !important;
+    font-family: 'Arial', sans-serif !important;
+}
+
+/* Custom styling for DataTables "Download" button */
+.dt-button.dt-custom-download {
+    font-size: var(--font-size-header, 1rem) !important;
+    font-family: 'Arial', sans-serif !important;
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+    color: white !important;
+    font-weight: 400 !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--bs-border-radius, 0.375rem) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+/*reports page table styles */
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+  }
+
+  .header-cell {
+    min-width: 150px;
+    padding: 8px;
+    vertical-align: top;
+    text-align: left;
+    background-color: white;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-weight: bold;
+    box-sizing: border-box;
+  }
+
+  .header-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .header-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .filter-select {
+    font-size: 12px;
+    padding: 4px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .report-col {
+    min-width: 150px;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    box-sizing: border-box;
+  }
+
+  .report-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+

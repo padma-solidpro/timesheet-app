@@ -1,7 +1,7 @@
 <div id="timesheet-entries">
-    <table class="table table-bordered mt-4">
+    <table id="timesheet-table" class="table table-bordered mt-4">
         <thead class="table-light">
-            <tr>
+            <tr class="header-dark">
                 <th>Date</th>
                 <th>Project</th>
                 <th>Task</th>
@@ -12,61 +12,111 @@
                 <th>Status</th>
                 <th>Action</th>
             </tr>
+            <tr>
+                <th></th> <!-- Date: sortable only -->
+                <th><select class="form-select form-select-sm" id="projectFilter"><option value="">All</option></select></th>
+                <th><select class="form-select form-select-sm" id="taskFilter"><option value="">All</option></select></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th> <!-- Action: no filter -->
+            </tr>
         </thead>
         <tbody>
             {% if timesheet_entries %}
                 {% for entry in timesheet_entries %}
-                <tr>
-                    <td>{{ entry.date }}</td>
-                    <td>{{ entry.project.name }}</td>
-                    <td>
-                        {% if entry.task %}
-                            {{ entry.task.name }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if entry.subtask %}
-                            {{ entry.subtask.name }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>{{ entry.task_description }}</td>
-                    <td>{{ entry.hours }}</td>
-                    <td>{{ entry.review_comment }}</td>
-                    <td>
-                        {% if entry.status == 'Approved' %}
-                            <span class="badge bg-success">Approved</span>
-                        {% elif entry.status == 'Pending' %}
-                            <span class="badge bg-warning text-dark">Pending</span>
-                        {% else %}
-                            <span class="badge bg-danger">Rejected</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if entry.status != "Approved" %}
-                            <button class="btn btn-sm btn-primary"
-                                    hx-get="{% url 'edit_timesheet' entry.id %}"
-                                    hx-target="#modal-body"
-                                    hx-trigger="click"
-                                    _="on htmx:afterSwap wait 10ms then call bootstrap.Modal.getOrCreateInstance(#modal) then call show()"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modal">
-                                Edit
-                            </button>
-                        {% else %}
-                            <span class="text-muted">Locked</span>
-                        {% endif %}
-                    </td>
-                </tr>
+                    <tr>
+                        <td>{{ entry.date }}</td>
+                        <td>{{ entry.project.name }}</td>
+                        <td>{% if entry.task %}{{ entry.task.name }}{% else %}-{% endif %}</td>
+                        <td>{% if entry.subtask %}{{ entry.subtask.name }}{% else %}-{% endif %}</td>
+                        <td>{{ entry.task_description }}</td>
+                        <td>{{ entry.hours }}</td>
+                        <td>{{ entry.review_comment }}</td>
+                        <td>
+                            {% if entry.status == 'Approved' %}
+                                <span class="badge bg-success">Approved</span>
+                            {% elif entry.status == 'Pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% else %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if entry.status != "Approved" %}
+                                <button class="btn btn-sm btn-primary"
+                                        hx-get="{% url 'edit_timesheet' entry.id %}"
+                                        hx-target="#modal-body"
+                                        hx-trigger="click"
+                                        _="on htmx:afterSwap wait 10ms then call bootstrap.Modal.getOrCreateInstance(#modal) then call show()"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modal">
+                                    Edit
+                                </button>
+                            {% else %}
+                                <span class="text-muted">Locked</span>
+                            {% endif %}
+                        </td>
+                    </tr>
                 {% endfor %}
             {% else %}
-                <tr>
-                    <td colspan="8" class="text-center">No timesheet entries found.</td>
-                </tr>
+                <tr><td colspan="9" class="text-center">No timesheet entries found.</td></tr>
             {% endif %}
         </tbody>
     </table>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const hasData = {{ self_has_data|yesno:"true,false" }};
+
+        if (!hasData) return;  // ⛔ Prevent DataTable init on empty
+
+        const table = $('#timesheet-table').DataTable({
+            dom: 'lrtip',
+            orderCellsTop: true,
+            searching: true,
+            lengthChange: false,
+            fixedHeader: true,
+            pageLength: 10,
+            order: [[0, 'desc']],  // Sort by Date
+            columnDefs: [
+                { targets: [1, 2], orderable: false },  // Project, Task: filterable but not sortable
+                { targets: [0], orderable: true },      // Date sortable
+                { targets: '_all', orderable: false },  // Everything else not sortable
+            ],
+            initComplete: function () {
+                const api = this.api();
+
+                // Dynamically insert filter selects in the header
+                const headerRow = $('#timesheet-table thead tr').eq(0);
+                const filterRow = $('<tr>').appendTo($('#timesheet-table thead'));
+
+                headerRow.find('th').each(function (i) {
+                    if ([1, 2].includes(i)) {
+                        // Project or Task
+                        const select = $('<select><option value="">All</option></select>')
+                            .attr('class', 'form-select form-select-sm')
+                            .on('change', function () {
+                                const val = $.fn.dataTable.util.escapeRegex($(this).val());
+                                api.column(i).search(val ? '^' + val + '$' : '', true, false).draw();
+                            });
+
+                        // Populate options
+                        api.column(i).data().unique().sort().each(function (d) {
+                            d = d || '-';
+                            if (select.find('option[value="' + d + '"]').length === 0) {
+                                select.append('<option value="' + d + '">' + d + '</option>');
+                            }
+                        });
+
+                        filterRow.append($('<th>').append(select));
+                    } else {
+                        filterRow.append('<th></th>');  // Empty filter cells
+                    }
+                });
+            }
+        });
+    });
+</script>

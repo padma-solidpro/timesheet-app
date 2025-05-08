@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from core.models import Timesheet
 from .models import ProjectReportMV, ProjectTaskTracking, EmployeeUtilizationMV
 from decimal import Decimal
 from datetime import date, timedelta
@@ -187,7 +188,65 @@ def reports_view(request):
         unsortable_columns = ['Employee Name']
         template_name = 'reports/reports_table_project_cost.html'
 
-        
+    elif report_type == 'timesheet_log_reports':
+        # Default date range: current month
+        today = date.today()
+        default_start = today.replace(day=1)
+        default_end = (default_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+        # Get date range from request
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        start_date = date.fromisoformat(start_date_str) if start_date_str else default_start
+        end_date = date.fromisoformat(end_date_str) if end_date_str else default_end
+
+        # Base queryset: Only Approved
+        qs = Timesheet.objects.filter(status='Approved', date__range=(start_date, end_date)).select_related('resource', 'project', 'task', 'reviewed_by')
+        print("Queryset count:", qs.count())
+        # Access control
+        user = request.user
+        resource = getattr(user, 'resource', None)
+        if resource:
+            access_level = getattr(user.resource, 'access_level', None)
+            if access_level is not None:
+                if access_level <= 2:
+                    qs = qs.filter(resource=resource)
+                elif access_level == 3:
+                    reporting_emp_ids = Resource.objects.filter(reporting_to=resource).values_list('id', flat=True)
+                    qs = qs.filter(resource_id__in=reporting_emp_ids)
+                # access_level == 4 => all records, no filtering
+
+        report_data_list = []
+        for entry in qs:
+            report_data_list.append({
+                'date': entry.date.strftime('%Y-%m-%d'),
+                'emp_id': entry.resource.emp_id,
+                'emp_name': entry.resource.name,
+                'project': entry.project.name,
+                'task': entry.task.name if entry.task else '',
+                'description': entry.task_description or '',
+                'hours': f"{entry.hours:.2f}",
+                'status': entry.status,
+                'reviewed_by': entry.reviewed_by.name if entry.reviewed_by else '',
+            })
+
+        report_data = report_data_list
+        table_headers = [
+            {'title': 'Date', 'data': 'date'},
+            {'title': 'Employee ID', 'data': 'emp_id'},
+            {'title': 'Employee Name', 'data': 'emp_name'},
+            {'title': 'Project', 'data': 'project'},
+            {'title': 'Task', 'data': 'task'},
+            {'title': 'Description', 'data': 'description'},
+            {'title': 'Hours', 'data': 'hours'},
+            {'title': 'Status', 'data': 'status'},
+            {'title': 'Reviewed By', 'data': 'reviewed_by'},
+        ]
+
+        filterable_columns = ['Employee Name', 'Project', 'Status', 'Reviewed By']
+        unsortable_columns = ['Employee Name', 'Project', 'Status', 'Reviewed By', 'Task', 'Description', 'Hours']
+        template_name = 'reports/reports_table_project_cost.html'
+    
             
     context = {
         'report_type': report_type,

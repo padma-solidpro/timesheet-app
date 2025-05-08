@@ -19,7 +19,7 @@ def timesheet_view(request):
 
     today = timezone.now().date()
     assigned_projects = resource.assigned_projects.all()
-    self_records = Timesheet.objects.filter(resource=resource).order_by('-date')
+    self_records = Timesheet.objects.filter(resource=resource, status__in=["Pending", "Rejected"]).order_by('-date')
     approval_records = Timesheet.objects.none()  # Default
 
     filter_param = request.GET.get('filter')
@@ -32,7 +32,7 @@ def timesheet_view(request):
         projects = Project.objects.filter(project_lead=resource)
 
         self_records = Timesheet.objects.filter(
-            project__in=projects, resource=resource
+            project__in=projects, resource=resource, status__in=["Pending", "Rejected"]
         ).order_by('-date')
 
         approval_records = Timesheet.objects.filter(
@@ -47,7 +47,7 @@ def timesheet_view(request):
         projects = Project.objects.filter(delivery_head=resource)
 
         self_records = Timesheet.objects.filter(
-            project__in=projects, resource=resource
+            project__in=projects, resource=resource, status__in=["Pending", "Rejected"]
         ).order_by('-date')  # may be empty
 
         approval_records = Timesheet.objects.filter(
@@ -70,6 +70,8 @@ def timesheet_view(request):
         'role': role_name,
         'filter': filter_param,
         'show_approval_tab': access_level >= 3,
+        'aprv_has_data': bool(approval_records),
+        'slef_has_data': bool(self_records),
     }
 
     return render(request, 'usertimesheet/timesheet.html', context)

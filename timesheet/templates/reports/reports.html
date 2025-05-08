@@ -1,22 +1,23 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <h1>Reports</h1>
+  <h3 class="page-header">Reports</h1>
 
   <!-- Filter Form -->
   <form id="filter-form" method="get" style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
     <!-- Report Type Dropdown -->
     <div>
       <label for="report_type" style="margin-right: 8px;">Select Report:</label>
-      <select id="report_type" name="report_type" style="padding: 6px; font-size: 14px;">
+      <select id="report_type" name="report_type" class="form-select form-select-sm me-2">
         <option value="project_cost_tracking" {% if report_type == 'project_cost_tracking' %}selected{% endif %}>Project Cost Tracking</option>
         <option value="project_task_tracking" {% if report_type == 'project_task_tracking' %}selected{% endif %}>Project Task Tracking</option>
         <option value="employee_utilization" {% if report_type == 'employee_utilization' %}selected{% endif %}>Employee Utilization</option>
+        <option value="timesheet_log_reports" {% if report_type == 'timesheet_log_reports' %}selected{% endif %}>Timesheet Log Reports</option>
       </select>
     </div>
 
     <!-- Date Range Filter (only for employee_utilization) -->
-    {% if report_type == 'employee_utilization' %}
+    {% if report_type == 'employee_utilization' or report_type == 'timesheet_log_reports' %}
     <div>
       <label for="start_date" style="margin-right: 5px;">Start:</label>
       <input type="date" name="start_date" id="start_date" value="{{ request.GET.start_date|default:'' }}">
