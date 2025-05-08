@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h3>Timesheet Entry</h3>
+    <h3 class="page-header">My Timesheet</h3>
 
     {% if duplicate_entry %}
     <div class="alert alert-warning">
@@ -40,90 +40,96 @@
 
     <!-- Table of Added Entries -->
     <div class="mt-5">
-      <ul class="nav nav-tabs" id="timesheetTabs" role="tablist">
-          <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="my-entries-tab" data-bs-toggle="tab" data-bs-target="#my-entries"
-                      type="button" role="tab" aria-controls="my-entries" aria-selected="true">
-                  My Entries
-              </button>
-          </li>
-          {% if show_approval_tab %}
-          <li class="nav-item" role="presentation">
-              <button class="nav-link" id="approval-tab" data-bs-toggle="tab" data-bs-target="#approval"
-                      type="button" role="tab" aria-controls="approval" aria-selected="false">
-                  Approval Records
-              </button>
-          </li>
-          {% endif %}
-      </ul>
-  
-      <div class="tab-content border border-top-0 p-3" id="timesheetTabsContent">
-          <!-- My Entries -->
-          <div class="tab-pane fade show active" id="my-entries" role="tabpanel" aria-labelledby="my-entries-tab">
-              {% include 'usertimesheet/partials/timesheet_entries.html' %}
-          </div>
-  
-          <!-- Approval Records -->
-          {% if show_approval_tab %}
-          <div class="tab-pane fade" id="approval" role="tabpanel" aria-labelledby="approval-tab">
-              <h5>Approval Records</h5>
-              <table class="table table-striped">
-                  <thead>
-                      <tr>
-                          <th>Date</th>
-                          <th>Employee</th>
-                          <th>Project</th>
-                          <th>Task</th>
-                          <th>Hours</th>
-                          <th>Status</th>
-                          <th>Review Comment</th>
-                          <th>Action</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {% for record in approval_records %}
-                      <tr>
-                          <td>{{ record.date }}</td>
-                          <td>{{ record.resource.name }}</td>
-                          <td>{{ record.project.name }}</td>
-                          <td>{{ record.task }}</td>
-                          <td>{{ record.hours }}</td>
-                          <td>{{ record.status }}</td>
-                          <td>{{ record.review_comment|default:"-" }}</td>
-                          <td>
-                              <button class="btn btn-sm btn-primary"
-                                      hx-get="{% url 'load_approval_form' record.id %}"
-                                      hx-target="#modal-body"
-                                      hx-trigger="click"
-                                      hx-swap="innerHTML"
-                                      data-bs-toggle="modal"
-                                      data-bs-target="#modal">
-                                  Update
-                              </button>
-                          </td>
-                      </tr>
-                      {% empty %}
-                      <tr><td colspan="8">No approval records available.</td></tr>
-                      {% endfor %}
-                  </tbody>
-              </table>
-          </div>
-          {% endif %}
-      </div>
-  </div>
-<div class="modal fade" id="modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalLabel">Edit Timesheet Entry</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <ul class="nav nav-tabs" id="timesheetTabs" role="tablist">
+            <li class="nav-item sub-header" role="presentation">
+                <button class="nav-link {% if not show_approval_tab %}active{% endif %}" 
+                        id="my-entries-tab" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#my-entries"
+                        type="button" 
+                        role="tab" 
+                        aria-controls="my-entries" 
+                        aria-selected="{% if not show_approval_tab %}true{% else %}false{% endif %}">
+                    My Entries
+                </button>
+            </li>
+            {% if show_approval_tab %}
+            <li class="nav-item sub-header" role="presentation">
+                <button class="nav-link {% if show_approval_tab %}active{% endif %}" 
+                        id="approval-tab-button" 
+                        data-bs-toggle="tab" 
+                        data-bs-target="#approval-tab-pane"
+                        type="button" 
+                        role="tab" 
+                        aria-controls="approval-tab-pane" 
+                        aria-selected="{% if show_approval_tab %}true{% else %}false{% endif %}">
+                    Approval Records
+                </button>
+            </li>
+            {% endif %}
+        </ul>
+
+        <div class="tab-content border border-top-0 p-3" id="timesheetTabsContent">
+            <!-- My Entries -->
+            <div class="tab-pane fade {% if not show_approval_tab %}show active{% endif %}" 
+                id="my-entries" 
+                role="tabpanel" 
+                aria-labelledby="my-entries-tab">
+                <!-- Include your timesheet entries here -->
+                {% include 'usertimesheet/partials/timesheet_entries.html' %}
+            </div>
+
+            <!-- Approval Records Tab Pane -->
+            {% if show_approval_tab %}
+            <div class="tab-pane fade {% if show_approval_tab %}show active{% endif %}" 
+                id="approval-tab-pane" 
+                role="tabpanel" 
+                aria-labelledby="approval-tab-button">
+                
+                <form method="post" 
+                    hx-post="{% url 'bulk_update_approvals' %}" 
+                    hx-target="#approval-table-wrapper"
+                    hx-swap="innerHTML">
+                    {% csrf_token %}
+                    
+                    <div class="d-flex mb-2">
+                        <select name="action" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="">-- Select Action --</option>
+                            <option value="Approved">Approve</option>
+                            <option value="Rejected">Reject</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-success">Update Status</button>
+                    </div>
+
+                    <!-- Only the table content is swapped -->
+                    <div id="approval-table-wrapper">
+                        {% include 'usertimesheet/partials/approval_entries_table.html' %}
+                    </div>
+                </form>
+            </div>
+            {% endif %}
         </div>
-        <div class="modal-body" id="modal-body">
-          <!-- HTMX will load form here -->
-        </div>
-      </div>
     </div>
-  </div>
+
+    <div class="modal fade" id="modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Edit Timesheet Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- HTMX will load form here -->
+                </div>
+            </div>
+        </div>
+    </div>
+<style>
+    #timesheetTabsContent {
+        background-color: white;
+    }
+</style>
+
   <script>
     document.body.addEventListener('htmx:afterOnLoad', function(evt) {
       if (evt.detail.elt && evt.detail.xhr.getResponseHeader('HX-Trigger') === 'timesheetUpdated') {
@@ -141,5 +147,15 @@
         htmx.ajax('GET', '/usertimesheet/entries/', '#timesheet-entries');
       }
     });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectAll = document.getElementById("select-all");
+        if (selectAll) {
+            selectAll.addEventListener("change", () => {
+                document.querySelectorAll(".row-check").forEach(cb => cb.checked = selectAll.checked);
+            });
+        }
+    });
+
     </script>
 {% endblock %}

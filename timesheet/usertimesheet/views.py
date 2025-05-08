@@ -7,6 +7,8 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 from django.http import HttpResponse, HttpResponseBadRequest
 from .forms import TimesheetForm, ApprovalForm
+from django.contrib import messages
+
 
 @login_required
 def timesheet_view(request):
@@ -17,7 +19,7 @@ def timesheet_view(request):
 
     today = timezone.now().date()
     assigned_projects = resource.assigned_projects.all()
-    self_records = Timesheet.objects.filter(resource=resource).order_by('-date')
+    self_records = Timesheet.objects.filter(resource=resource, status__in=["Pending", "Rejected"]).order_by('-date')
     approval_records = Timesheet.objects.none()  # Default
 
     filter_param = request.GET.get('filter')
@@ -30,7 +32,7 @@ def timesheet_view(request):
         projects = Project.objects.filter(project_lead=resource)
 
         self_records = Timesheet.objects.filter(
-            project__in=projects, resource=resource
+            project__in=projects, resource=resource, status__in=["Pending", "Rejected"]
         ).order_by('-date')
 
         approval_records = Timesheet.objects.filter(
@@ -45,7 +47,7 @@ def timesheet_view(request):
         projects = Project.objects.filter(delivery_head=resource)
 
         self_records = Timesheet.objects.filter(
-            project__in=projects, resource=resource
+            project__in=projects, resource=resource, status__in=["Pending", "Rejected"]
         ).order_by('-date')  # may be empty
 
         approval_records = Timesheet.objects.filter(
@@ -68,6 +70,8 @@ def timesheet_view(request):
         'role': role_name,
         'filter': filter_param,
         'show_approval_tab': access_level >= 3,
+        'aprv_has_data': bool(approval_records),
+        'slef_has_data': bool(self_records),
     }
 
     return render(request, 'usertimesheet/timesheet.html', context)
@@ -174,7 +178,14 @@ def edit_timesheet(request, pk):
 
         form = TimesheetForm(request.POST, instance=timesheet)
         if form.is_valid():
-            form.save()
+            # form.save()
+            updated_timesheet = form.save(commit=False)
+            
+            if updated_timesheet.status == 'Rejected':
+                updated_timesheet.status = 'Pending'
+
+            updated_timesheet.save()
+            
             return HttpResponse(status=204, headers={'HX-Trigger': 'timesheetUpdated'})
             # return render(request, 'usertimesheet/partials/success_message.html')
         else:
@@ -228,6 +239,35 @@ def add_timesheet_row(request):
     return render(request, "usertimesheet/partials/timesheet_form_row.html", context)
 
 
+def bulk_update_approvals(request):
+    record_ids = request.POST.getlist("record_ids")
+    action = request.POST.get("action")
+
+    if not record_ids or not action:
+        messages.error(request, "Please select records and an action.")
+        return redirect("timesheet")  # or return the table partial again
+
+    reviewer = request.user.resource
+
+    for record_id in record_ids:
+        try:
+            record = Timesheet.objects.get(id=record_id)
+            comment = request.POST.get(f"review_comment_{record_id}", "")
+            record.status = action
+            record.review_comment = comment
+            record.reviewed_by = reviewer
+            record.reviewed_on = timezone.now()
+            record.save()
+        except Timesheet.DoesNotExist:
+            continue
+
+    # messages.success(request, f"{len(record_ids)} record(s) updated.")
+
+    # Return updated table
+    approval_records = Timesheet.objects.filter(status__in=["Pending", "Rejected"])
+    return render(request, "usertimesheet/partials/approval_entries_table.html", {
+        "approval_records": approval_records
+    })
 
 
 # working logic of approval projects filet

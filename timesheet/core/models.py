@@ -205,11 +205,28 @@ class ProjectTaskAssignment(models.Model):
     subtask = models.ForeignKey(SubTask, on_delete=models.CASCADE, null=True, blank=True)
     allotted_hours = models.DecimalField(max_digits=6, decimal_places=2)
 
+    task_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('Yet to Start', 'Yet to Start'),
+            ('In Progress', 'In Progress'),
+            ('On Hold', 'On Hold'),
+            ('Completed', 'Completed'),
+        ],
+        default='Yet to Start',
+    )
+
     class Meta:
         unique_together = ('project', 'task', 'subtask')
 
     def __str__(self):
-        return f"{self.project.name} - {self.task.name} - {self.subtask.name if self.subtask else ''}"
+        return f"{self.project.name} - {self.task.name} - {self.subtask.name if self.subtask else ''} - {self.get_task_status_display()}"
+        
+    # class Meta:
+    #     unique_together = ('project', 'task', 'subtask')
+
+    # def __str__(self):
+    #     return f"{self.project.name} - {self.task.name} - {self.subtask.name if self.subtask else ''}"
 
 class Timesheet(models.Model):
     STATUS_CHOICES = [
@@ -233,17 +250,3 @@ class Timesheet(models.Model):
 
     def __str__(self):
         return f"{self.resource.name} - {self.project.name} ({self.date})"
-
-
-
-
-# # Timesheet Table
-# class Timesheet(models.Model):
-#     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
-#     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-#     task_description = models.TextField()
-#     hours = models.DecimalField(max_digits=5, decimal_places=2)
-#     date = models.DateField(auto_now_add=True)
-
-#     def __str__(self):
-#         return f"{self.resource.name} - {self.project.name} ({self.date})"

@@ -1,0 +1,97 @@
+{% load report_filters %}
+<div style="overflow-x: auto;">
+  <table id="{{ report_type }}Table" class="table display-report-table">
+    <thead>
+      <!-- Sortable Header Row -->
+      <tr class="header-dark">
+        {% for header in table_headers %}
+          <th class="header-cell">
+            <div class="header-stack">
+              <span>{{ header.title }}</span>
+            </div>
+          </th>
+        {% endfor %}
+      </tr>
+    
+      <!-- Filter Row -->
+      <tr class="header-light">
+        {% for header in table_headers %}
+          <th>
+            {% if header.title in filterable_columns %}
+              <select data-column="{{ forloop.counter0 }}" class="form-select form-select-sm filter">
+                <option value="">All</option>
+                {% for row in report_data|unique_values:header.data %}
+                  <option value="{{ row.key }}">{{ row.key }}</option>
+                {% endfor %}
+              </select>
+            {% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in report_data %}
+        <tr>
+          {% for header in table_headers %}
+            <td class="report-col">{{ row|get_item:header.data|default:"-"  }}</td>
+          {% endfor %}
+        </tr>
+      {% empty %}
+        <tr><td colspan="{{ table_headers|length }}" class="text-center">No data available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const tableId = "{{ report_type|slugify }}Table";
+    const tableSelector = "#" + tableId;
+
+    if (!document.querySelector(tableSelector)) return;
+
+    // Destroy existing DataTable if any
+    if ($.fn.DataTable.isDataTable(tableSelector)) {
+      $(tableSelector).DataTable().clear().destroy();
+    }
+
+    const hasData = {{ has_data|yesno:"true,false" }};
+    const unsortable = {{ unsortable_columns|safe }};
+    const headers = {{ table_headers|safe }};
+    const columnDefs = headers.map((h, idx) => ({
+      targets: idx,
+      orderable: !unsortable.includes(h.title)
+    }));
+
+    $(tableSelector).DataTable({
+      dom: 'Blrtip',
+      orderCellsTop: true, // crucial when using multiple header rows
+      fixedHeader: true,
+      searching: true,
+      lengthChange: true,
+      buttons: hasData ? [{
+        extend: 'csv',
+        text: '<i class="fas fa-download me-2"></i> Download Report',
+        className: 'btn btn-success dt-custom-download'
+      }] : [],
+      scrollX: true,
+      paging: hasData,
+      info: hasData,
+      columnDefs: columnDefs,
+      initComplete: function () {
+        if (hasData) {
+          this.api().columns().every(function () {
+            const column = this;
+            const index = column.index();
+            $('select[data-column="' + index + '"]').on('change', function () {
+              const val = $.fn.dataTable.util.escapeRegex($(this).val());
+              column.search(val ? '^' + val + '$' : '', true, false).draw();
+            });
+          });
+        }
+      }
+    });
+  });
+</script>
+

@@ -1,26 +1,56 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>Reports</h3>
-        <div>
-            <label for="reportType" class="form-label me-2">Select Report Type:</label>
-            <select name="report_type" id="reportType" class="form-select d-inline-block w-auto"
-                    hx-get="{% url 'report_data' %}"
-                    hx-target="#report-content"
-                    hx-trigger="change"
-                    hx-include="[name='report_type']">
-                <option value="project" selected>Project Cost Tracking</option>
-                <option value="department">Department-wise Report</option>
-                <option value="employee">Employee Utilization</option>
-            </select>
-        </div>
+  <h3 class="page-header">Reports</h1>
+
+  <!-- Filter Form -->
+  <form id="filter-form" method="get" style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+    <!-- Report Type Dropdown -->
+    <div>
+      <label for="report_type" style="margin-right: 8px;">Select Report:</label>
+      <select id="report_type" name="report_type" class="form-select form-select-sm me-2">
+        <option value="project_cost_tracking" {% if report_type == 'project_cost_tracking' %}selected{% endif %}>Project Cost Tracking</option>
+        <option value="project_task_tracking" {% if report_type == 'project_task_tracking' %}selected{% endif %}>Project Task Tracking</option>
+        <option value="employee_utilization" {% if report_type == 'employee_utilization' %}selected{% endif %}>Employee Utilization</option>
+        <option value="timesheet_log_reports" {% if report_type == 'timesheet_log_reports' %}selected{% endif %}>Timesheet Log Reports</option>
+      </select>
     </div>
 
-    <div id="report-content" hx-get="{% url 'report_data' %}" hx-include="[name='report_type']" hx-trigger="load">
-        <!-- Report content will load here via HTMX -->
+    <!-- Date Range Filter (only for employee_utilization) -->
+    {% if report_type == 'employee_utilization' or report_type == 'timesheet_log_reports' %}
+    <div>
+      <label for="start_date" style="margin-right: 5px;">Start:</label>
+      <input type="date" name="start_date" id="start_date" value="{{ request.GET.start_date|default:'' }}">
     </div>
-</div>
+    <div>
+      <label for="end_date" style="margin-right: 5px;">End:</label>
+      <input type="date" name="end_date" id="end_date" value="{{ request.GET.end_date|default:'' }}">
+    </div>
+    <div>
+      <button type="submit" style="padding: 6px 12px;">Apply</button>
+    </div>
+    {% endif %}
+  </form>
+
+  <!-- Report Table -->
+  <div id="report_table_container">
+    {% include template_name %}
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      // When report type is changed, reload page with selected type
+      $('#report_type').on('change', function () {
+        const selectedReport = $(this).val();
+        const url = new URL(window.location.href);
+        url.searchParams.set('report_type', selectedReport);
+        // Remove any existing date filters when switching reports
+        url.searchParams.delete('start_date');
+        url.searchParams.delete('end_date');
+        window.location.href = url.toString();
+      });
+
+    });
+  </script>
 {% endblock %}
+
