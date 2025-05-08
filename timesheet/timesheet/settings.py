@@ -147,3 +147,4 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'spdt-apps-svc@solidpro-es.com'
 EMAIL_HOST_PASSWORD = 'G(167973650935oh'
+DEFAULT_FROM_EMAIL = 'Timesheet App <no-reply@example.com>'

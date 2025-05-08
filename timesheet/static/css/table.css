@@ -44,9 +44,9 @@
     border-bottom: 1px solid #dee2e6 !important;
 }
 
-/* Dark-themed table header style */
+/* Dark-themed table header style ##00305B */
 table > thead > tr.header-dark > th {
-    background-color: #04004b !important;
+    background-color: #07017b !important;  
     color: white;
     font-family: 'Arial', sans-serif;
     font-weight: bold;
