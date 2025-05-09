@@ -8,6 +8,47 @@ from django.views.decorators.http import require_POST
 from django.http import HttpResponse, HttpResponseBadRequest
 from .forms import TimesheetForm, ApprovalForm
 from django.contrib import messages
+from django.db.models import Q
+
+
+def get_approval_records_for_user(user):
+    resource = user.resource
+    role = resource.role
+    role_name = role.name
+    access_level = role.access_level
+
+    leave_project = Project.objects.filter(name__iexact='Leave').first()
+    approval_records = Timesheet.objects.none()
+
+    if access_level == 3:
+        projects = Project.objects.filter(project_lead=resource)
+        approval_records = Timesheet.objects.filter(
+            (
+                Q(project__in=projects) |
+                Q(project=leave_project, resource__reporting_to=resource)
+            ),
+            status__in=["Pending", "Rejected"]
+        ).exclude(resource=resource) \
+         .filter(resource__role__access_level__lt=3) \
+         .order_by('-date')
+
+    elif access_level == 4:
+        projects = Project.objects.filter(delivery_head=resource)
+        approval_records = Timesheet.objects.filter(
+            (
+                Q(project__in=projects) |
+                Q(project=leave_project, resource__reporting_to=resource)
+            ),
+            status__in=["Pending", "Rejected"]
+        ).exclude(resource=resource) \
+         .filter(resource__role__access_level=3) \
+         .order_by('-date')
+
+    elif user.is_superuser or role_name.lower() == "ceo":
+        approval_records = Timesheet.objects.filter(status='Pending').order_by('-date')
+
+    return approval_records
+
 
 
 @login_required
@@ -28,39 +69,13 @@ def timesheet_view(request):
         pass  # self_records already populated
 
     # Access Level 3: Project Lead
-    elif access_level == 3:
-        projects = Project.objects.filter(project_lead=resource)
-
-        self_records = Timesheet.objects.filter(
-            project__in=projects, resource=resource, status__in=["Pending", "Rejected"]
-        ).order_by('-date')
-
-        approval_records = Timesheet.objects.filter(
-            project__in=projects,
-            status__in=["Pending", "Rejected"]
-        ).exclude(resource=resource) \
-        .filter(resource__role__access_level__lt=3) \
-        .order_by('-date')
-
-    # Access Level 4: Delivery Lead
-    elif access_level == 4:
-        projects = Project.objects.filter(delivery_head=resource)
-
-        self_records = Timesheet.objects.filter(
-            project__in=projects, resource=resource, status__in=["Pending", "Rejected"]
-        ).order_by('-date')  # may be empty
-
-        approval_records = Timesheet.objects.filter(
-            project__in=projects,
-            status__in=["Pending", "Rejected"]
-        ).exclude(resource=resource) \
-        .filter(resource__role__access_level=3) \
-        .order_by('-date')
+    elif access_level in [3, 4]:
+        approval_records = get_approval_records_for_user(request.user)
 
     # CEO or Superuser
     elif request.user.is_superuser or role_name.lower() == "ceo":
         self_records = Timesheet.objects.all().order_by('-date')
-        approval_records = Timesheet.objects.filter(status='Pending').order_by('-date')
+        approval_records = get_approval_records_for_user(request.user)
 
     context = {
         'timesheet_entries': self_records,
@@ -76,6 +91,7 @@ def timesheet_view(request):
 
     return render(request, 'usertimesheet/timesheet.html', context)
 
+
 # Submit all rows in one go
 def submit_timesheet_entries(request):
     if request.method == "POST":
@@ -86,12 +102,16 @@ def submit_timesheet_entries(request):
         resource = get_object_or_404(Resource, user=request.user)  # ✅ Fix here
         existing_entries = Timesheet.objects.filter(resource=resource, date=date)
         if Timesheet.objects.filter(resource=resource, date=date).exists():
-            context = {
-                "duplicate_entry": True,
-                "assigned_projects": resource.assigned_projects.all(),  # if needed for re-render
-                "timesheet_entries": Timesheet.objects.filter(resource=resource).order_by('-date')  # optional
-            }
-            return render(request, "usertimesheet/timesheet.html", context)
+            messages.error(request, "You have already submitted a timesheet for this date.")
+            return redirect("usertimesheet")  # 👈 redirect instead of render
+
+        # if Timesheet.objects.filter(resource=resource, date=date).exists():
+        #     context = get_timesheet_context(
+        #         request,
+        #         error_message="You have already submitted a timesheet for this date."
+        #     )
+        #     return render(request, "usertimesheet/timesheet.html", context)
+
         
         for index in set(rows):
             project_id = request.POST.get(f"project_{index}")
@@ -264,7 +284,7 @@ def bulk_update_approvals(request):
     # messages.success(request, f"{len(record_ids)} record(s) updated.")
 
     # Return updated table
-    approval_records = Timesheet.objects.filter(status__in=["Pending", "Rejected"])
+    approval_records = get_approval_records_for_user(request.user)
     return render(request, "usertimesheet/partials/approval_entries_table.html", {
         "approval_records": approval_records
     })
@@ -337,3 +357,76 @@ def bulk_update_approvals(request):
 #         'filter': filter_param,
 #         'show_approval_tab': show_approval_tab,
 #     }
+
+
+
+    # resource = request.user.resource
+    # role = resource.role
+    # role_name = role.name
+    # access_level = role.access_level
+
+    # today = timezone.now().date()
+    # assigned_projects = resource.assigned_projects.all()
+    # self_records = Timesheet.objects.filter(resource=resource, status__in=["Pending", "Rejected"]).order_by('-date')
+    # approval_records = Timesheet.objects.none()
+
+    # filter_param = request.GET.get('filter')
+
+    # leave_project = Project.objects.filter(name__iexact='Leave').first()
+    # print(leave_project)
+    # if access_level in [1, 2]:
+    #     pass  # self_records already populated
+
+    # elif access_level == 3:
+    #     projects = Project.objects.filter(project_lead=resource)
+
+    #     self_records = Timesheet.objects.filter(
+    #         Q(project__in=projects) | Q(project=leave_project, resource=resource),
+    #         status__in=["Pending", "Rejected"]
+    #     ).order_by('-date')
+
+    #     approval_records = Timesheet.objects.filter(
+    #         (
+    #             Q(project__in=projects) |
+    #             Q(project=leave_project, resource__reporting_to=resource)
+    #         ),
+    #         status__in=["Pending", "Rejected"]
+    #     ).exclude(resource=resource) \
+    #      .filter(resource__role__access_level__lt=3) \
+    #      .order_by('-date')
+    # elif access_level == 4:
+    #     projects = Project.objects.filter(delivery_head=resource)
+
+    #     self_records = Timesheet.objects.filter(
+    #         Q(project__in=projects) | Q(project=leave_project, resource=resource),
+    #         status__in=["Pending", "Rejected"]
+    #     ).order_by('-date')
+
+    #     approval_records = Timesheet.objects.filter(
+    #         (
+    #             Q(project__in=projects) |
+    #             Q(project=leave_project, resource__reporting_to=resource)
+    #         ),
+    #         status__in=["Pending", "Rejected"]
+    #     ).exclude(resource=resource) \
+    #      .filter(resource__role__access_level=3) \
+    #      .order_by('-date')
+
+    # elif request.user.is_superuser or role_name.lower() == "ceo":
+    #     self_records = Timesheet.objects.all().order_by('-date')
+    #     approval_records = Timesheet.objects.filter(status='Pending').order_by('-date')
+
+    # context = {
+    #     'timesheet_entries': self_records,
+    #     'approval_records': approval_records,
+    #     'assigned_projects': assigned_projects,
+    #     'today': today,
+    #     'role': role_name,
+    #     'filter': filter_param,
+    #     'show_approval_tab': access_level >= 3,
+    #     'aprv_has_data': bool(approval_records),
+    #     'slef_has_data': bool(self_records),
+    # }
+
+    # return render(request, 'usertimesheet/timesheet.html', context)
+

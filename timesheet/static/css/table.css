@@ -1,7 +1,7 @@
 :root {
     /* Define custom font sizes and theme variables */
-    --font-size-header: 0.95rem;
-    --font-size-body: 0.9rem;
+    --font-size-header: 0.90rem;
+    --font-size-body: 0.85rem;
     --font-size-page-header: 1.5rem;
     --font-size-sub-header: 1rem;
     --bs-border-radius: 0.375rem;
@@ -28,8 +28,14 @@
 /* Set max height and scroll for tab content (e.g., timesheet table) */
 #timesheetTabsContent {
     height: 310px;
-    overflow-y: auto;
+    overflow: hidden;
 }
+
+
+.dataTables_scrollBody {
+    overflow-y: auto !important;  /* Scroll only tbody */
+}
+
 
 /* Remove all borders in table-bordered */
 .table-bordered, 
@@ -38,10 +44,18 @@
     border: none !important;
 }
 
+
 /* Add only bottom border to table cells */
+table.dataTable tbody tr,
 .table-bordered th, 
 .table-bordered td {
     border-bottom: 1px solid #dee2e6 !important;
+    height: 25px !important;
+    padding: 5px 10px !important;
+}
+table.dataTable tbody td {
+    padding: 5px 10px !important;  /* Force padding change */
+    line-height: 1.5 !important;   /* Adjust line height */
 }
 
 /* Dark-themed table header style ##00305B */
@@ -64,8 +78,9 @@ table > thead > tr.header-light > th {
     font-weight: 400 !important;
     font-size: var(--font-size-header) !important;
     text-align: center;
-    padding: 0.75rem;
+    /* padding: 0.75rem; */
     border-bottom: 2px solid white;
+    padding: 0.2rem 0.5rem;
 }
 
 /* Table row background colors (odd rows) */
@@ -137,6 +152,8 @@ select.form-control,
 textarea.form-control {
     font-size: var(--font-size-body) !important;
     font-family: 'Arial', sans-serif !important;
+    padding: 2px 6px;
+    height: 26px;       
 }
 
 /* Custom styling for DataTables "Download" button */

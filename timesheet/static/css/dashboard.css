@@ -1,88 +1,131 @@
-/* Card styling for metrics */
+/* dashboard.css */
+
+
+h2 {
+  color: #343a40; /* Dark grey for the main heading */
+}
+
 .card {
-    border-radius: 8px;
-    border: 1px solid #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #dee2e6; /* Light grey border for cards */
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+  background-color: #fff; /* White background for cards */
 }
 
-.card h5 {
-    font-size: 18px;
-    font-weight: 600;
-    text-align: left;
-    color: #6c757d;
+.chart-wrapper, #comboUtilChart, #taskComboUtilChart {
+  width: 100% !important;
+  height: 175px;
+  display: block;
 }
 
-.card h3 {
-    font-size: 26px;
-    font-weight: bold;
-    margin-top: 10px;
-    
+.card-header {
+  background-color: #fff !important; /* Force white background for card headers */
+  border-bottom: 0px solid #ffffff;
+  padding: 0.25rem 0.5rem !important;
+  height: 10%;
+  margin-top: 0.5rem;
+}
+.btn-group{
+  padding: 1rem 0.25rem !important;
+}
+.card-title {
+  margin-top: 0; /* Remove extra top margin */
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: #495057;
 }
 
-/* General chart canvas appearance */
-canvas {
-    background-color: #fff;
-    padding: 10px;
-    max-width: 100%;
-    height: auto !important;
-    image-rendering: auto;
+
+.card-text {
+  color: #212529; /* Darker grey for card text */
 }
 
-/* Fix for chart label wrapping */
-.chartjs-render-monitor {
-    font-size: 12px;
-    white-space: pre-line !important;
+.scorecard .card-title {
+  font-size: 0.9rem;
+  font-weight: bold;
 }
 
-/* Wrapper for chart and list containers */
+.scorecard .card-text {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
 .chart-container {
-    background-color: #fff;
-    padding: 15px 20px;
-    border-radius: 8px;
-    border: 1px solid #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    height: 100%;
-    min-height: 260px; /* Ensures visual balance */
+  max-height: 300px !important; /* Adjust as needed */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* Smaller titles for charts */
-.chart-container h6 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 12px;
+.chart-container .card-body {
+  flex: 1 1 auto;
+  overflow: hidden;
+  padding: 0.5rem; /* Reduce padding if needed */
 }
 
-.chart-canvas {
-    width: 80% !important;
-    height: 100% !important;
-    display: block;
+.chart-wrapper, #dailyChart, #projectComboUtilChart, #taskComboUtilChart {
+  height: 175px;  /* Adjust as needed */
+  width: 100% !important;
+  position: relative;
 }
 
-/* General Styling for Canvas Elements */
-.chart-canvas {
-    width: 100% !important;   /* Make the canvas responsive */
-    height: 300px !important; /* Fixed height for consistent size */
-  }
-  
-  /* Specific Sections to Control Chart Size */
-  #loggedHoursSection .card, 
-  #workedHoursSummarySection .card,
-  #billableHoursSection .card, 
-  #allottedVsLoggedSection .card {
-    padding: 20px;            /* Add padding inside the cards */
-  }
-  
-  /* Adjust chart sizes for smaller screens */
-  @media (max-width: 768px) {
-    .chart-canvas {
-      height: 250px !important; /* Slightly smaller for mobile devices */
-    }
-  }
-  
-  /* For larger screens, increase chart size */
-  @media (min-width: 1200px) {
-    .chart-canvas {
-      height: 400px !important; /* Larger size on large screens */
-    }
-  }
-  
+.nav-tabs .nav-link {
+  border: 1px solid transparent;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+  color: #007bff;
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+  color: #495057;
+  background-color: #fff;
+  border-color: #dee2e6 #dee2e6 #fff;
+}
+
+.table {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.table thead th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+/* Fixed height and scroll for alert tables */
+.card .card-body.overflow-auto {
+  /* max-height: 200px; Adjust as needed */
+  overflow-y: auto;
+}
+
+/* Scorecard width to occupy available space */
+.row.flex-nowrap > .col-sm-auto {
+  flex: 1 0 auto; /* Allow items to grow and not shrink, based on content */
+  width: auto; /* Override default width */
+  max-width: none !important; /* Ensure it can take full available space */
+}
+
+/* Adjust overall row gap for better spacing */
+.row > * {
+  padding-right: 0.75rem;
+  padding-left: 0.75rem;
+}
+
+.row.gx-2 > * {
+  padding-right: 0rem;
+  padding-left: 0.5rem;
+}
+
+.row.gx-3 > * {
+  padding-right: 0.75rem;
+  padding-left: 0.75rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.75rem !important;
+}
+
+.mt-3 {
+  margin-top: 1rem !important;
+}
