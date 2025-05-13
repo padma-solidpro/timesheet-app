@@ -1,33 +1,38 @@
-<div id="assignmentTable">
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr class="header-dark">
-                <th>Project</th>
-                <th>Task</th>
-                <th>Subtask</th>
-                <th>Allotted Hours</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for a in assignments %}
-            <tr>
-                <td>{{ a.project.name }}</td>
-                <td>{{ a.task.name }}</td>
-                <td>{{ a.subtask.name }}</td>
-                <td>{{ a.allotted_hours }}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary"
-                            hx-get="{% url 'edit_assignment' a.id %}"
-                            hx-target="#assignmentModalBody"
-                            hx-trigger="click"
-                            data-bs-toggle="modal"
-                            data-bs-target="#assignmentModal">
-                        Edit
-                    </button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>    
+<table id="assignmentTable" class="table table-striped table-hover">
+    <thead>
+        <tr class="header-dark">
+            <th>Project</th>
+            <th>Task</th>
+            <th>Subtask</th>
+            <th>Allotted Hours</th>
+            <th>Action</th>
+        </tr>
+        <tr class="header-light">
+            <th><select class="form-select form-select-sm mx-auto"><option value="">All</option></select></th>
+            <th><select class="form-select form-select-sm mx-auto"><option value="">All</option></select></th>
+            <th><select class="form-select form-select-sm mx-auto"><option value="">All</option></select></th>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in assignments %}
+        <tr>
+            <td>{{ a.project.name }}</td>
+            <td>{{ a.task.name }}</td>
+            <td>{{ a.subtask.name }}</td>
+            <td>{{ a.allotted_hours }}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary"
+                        hx-get="{% url 'edit_assignment' a.id %}"
+                        hx-target="#assignmentModalBody"
+                        hx-trigger="click"
+                        data-bs-toggle="modal"
+                        data-bs-target="#assignmentModal">
+                    Edit
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -51,7 +51,7 @@ h2 {
 }
 
 .chart-container {
-  max-height: 300px !important; /* Adjust as needed */
+  max-height: 100% !important; /* Adjust as needed */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -81,16 +81,6 @@ h2 {
   color: #495057;
   background-color: #fff;
   border-color: #dee2e6 #dee2e6 #fff;
-}
-
-.table {
-  margin-bottom: 0;
-  font-size: 0.9rem;
-}
-
-.table thead th {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
 }
 
 /* Fixed height and scroll for alert tables */
@@ -128,4 +118,27 @@ h2 {
 
 .mt-3 {
   margin-top: 1rem !important;
+}
+
+.card .card-body.overflow-auto {
+  overflow-y: auto;
+}
+.card.flex-grow-1 {
+  min-height: 0; /* Prevents flex child overflow */
+}
+#projectFilter {
+    width: auto;
+    min-width: 110px;         /* Enough for "All Projects" */
+    max-width: 150px;         /* Prevent it from growing too wide */
+    padding-right: 2rem;      /* Room for the arrow */
+    white-space: nowrap;      /* Prevent wrapping */
+    text-overflow: ellipsis;  /* Truncate overflow text */
+    overflow: hidden;         /* Hide the overflowed text */
+}
+#filter-form{
+    display: flex;
+    align-items: center;
+    gap: 10px;                /* Equal gap between each input */
+    flex-wrap: wrap;
+    margin-bottom: 15px;
 }

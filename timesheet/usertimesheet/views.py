@@ -61,6 +61,8 @@ def timesheet_view(request):
     today = timezone.now().date()
     assigned_projects = resource.assigned_projects.all()
     self_records = Timesheet.objects.filter(resource=resource, status__in=["Pending", "Rejected"]).order_by('-date')
+    print("Self Records of Resource", resource)
+    print(self_records)
     approval_records = Timesheet.objects.none()  # Default
 
     filter_param = request.GET.get('filter')
@@ -86,7 +88,7 @@ def timesheet_view(request):
         'filter': filter_param,
         'show_approval_tab': access_level >= 3,
         'aprv_has_data': bool(approval_records),
-        'slef_has_data': bool(self_records),
+        'self_has_data': bool(self_records),
     }
 
     return render(request, 'usertimesheet/timesheet.html', context)
@@ -258,17 +260,22 @@ def add_timesheet_row(request):
     }
     return render(request, "usertimesheet/partials/timesheet_form_row.html", context)
 
-
 def bulk_update_approvals(request):
     record_ids = request.POST.getlist("record_ids")
     action = request.POST.get("action")
+    approval_records = get_approval_records_for_user(request.user)
 
     if not record_ids or not action:
         messages.error(request, "Please select records and an action.")
-        return redirect("timesheet")  # or return the table partial again
+        html = render_to_string("usertimesheet/partials/approval_entries_table.html", {
+            'approval_records': approval_records
+        }, request)
+        response = HttpResponse(html)
+        response["HX-Trigger"] = "showMessage"
+        return response
 
+    # Process updates
     reviewer = request.user.resource
-
     for record_id in record_ids:
         try:
             record = Timesheet.objects.get(id=record_id)
@@ -281,14 +288,16 @@ def bulk_update_approvals(request):
         except Timesheet.DoesNotExist:
             continue
 
-    # messages.success(request, f"{len(record_ids)} record(s) updated.")
+    messages.success(request, f"{len(record_ids)} record(s) updated.")
+    html = render_to_string("usertimesheet/partials/approval_entries_table.html", {
+        "approval_records": get_approval_records_for_user(request.user)
+    }, request)
+    response = HttpResponse(html)
+    response["HX-Trigger"] = "showMessage"
+    return response
 
-    # Return updated table
-    approval_records = get_approval_records_for_user(request.user)
-    return render(request, "usertimesheet/partials/approval_entries_table.html", {
-        "approval_records": approval_records
-    })
-
+def render_messages(request):
+    return render(request, "usertimesheet/partials/messages.html")
 
 # working logic of approval projects filet
 # user = request.user

@@ -4,34 +4,38 @@
   <h3 class="page-header">Reports</h1>
 
   <!-- Filter Form -->
-  <form id="filter-form" method="get" style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-    <!-- Report Type Dropdown -->
-    <div>
-      <label for="report_type" style="margin-right: 8px;">Select Report:</label>
-      <select id="report_type" name="report_type" class="form-select form-select-sm me-2">
-        <option value="project_cost_tracking" {% if report_type == 'project_cost_tracking' %}selected{% endif %}>Project Cost Tracking</option>
-        <option value="project_task_tracking" {% if report_type == 'project_task_tracking' %}selected{% endif %}>Project Task Tracking</option>
-        <option value="employee_utilization" {% if report_type == 'employee_utilization' %}selected{% endif %}>Employee Utilization</option>
+  <form id="filter-form" method="get" class="filter-form">
+    <!-- Report Type -->
+    <div class="filter-group">
+      <label for="report_type">Select Report:</label>
+      <select id="report_type" name="report_type" class="form-select form-select-sm" style="width: 220px;">
+        {% if access_level > 2 %}
+          <option value="project_cost_tracking" {% if report_type == 'project_cost_tracking' %}selected{% endif %}>Project Cost Tracking</option>
+          <option value="project_task_tracking" {% if report_type == 'project_task_tracking' %}selected{% endif %}>Project Task Tracking</option>
+          <option value="employee_utilization" {% if report_type == 'employee_utilization' %}selected{% endif %}>Employee Utilization</option>
+        {% endif %}
+        
         <option value="timesheet_log_reports" {% if report_type == 'timesheet_log_reports' %}selected{% endif %}>Timesheet Log Reports</option>
       </select>
     </div>
 
-    <!-- Date Range Filter (only for employee_utilization) -->
+    <!-- Date Filters -->
     {% if report_type == 'employee_utilization' or report_type == 'timesheet_log_reports' %}
-    <div>
-      <label for="start_date" style="margin-right: 5px;">Start:</label>
-      <input type="date" name="start_date" id="start_date" value="{{ request.GET.start_date|default:'' }}">
+    <div class="filter-group">
+      <label for="start_date">Start:</label>
+      <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ request.GET.start_date|default:start_date }}">
     </div>
-    <div>
-      <label for="end_date" style="margin-right: 5px;">End:</label>
-      <input type="date" name="end_date" id="end_date" value="{{ request.GET.end_date|default:'' }}">
+
+    <div class="filter-group">
+      <label for="end_date">End:</label>
+      <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ request.GET.end_date|default:end_date}}">
     </div>
-    <div>
-      <button type="submit" style="padding: 6px 12px;">Apply</button>
+
+    <div class="filter-group">
+      <button type="submit" class="btn btn-primary btn-sm">Apply</button>
     </div>
     {% endif %}
   </form>
-
   <!-- Report Table -->
   <div id="report_table_container">
     {% include template_name %}

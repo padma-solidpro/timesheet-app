@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 from core.models import Client, Project, ProjectTaskAssignment, SubTask, Task
 from .forms import ClientForm, ProjectForm, ProjectTaskAssignmentForm
+from django_htmx.http import trigger_client_event
 
 def projects_view(request):
     context = {
@@ -13,20 +14,13 @@ def projects_view(request):
     return render(request, 'projects/projects.html', context)
 
 @require_POST
-# def save_client(request):
-#     instance = get_object_or_404(Client, id=request.POST.get('client_id')) if request.POST.get('client_id') else None
-#     form = ClientForm(request.POST, instance=instance)
-#     if form.is_valid():
-#         form.save()
-#         return render(request, "projects/partials/client_table.html", {"clients": Client.objects.all()})
-#     return HttpResponse(status=400)
-
 def save_client(request):
     instance = get_object_or_404(Client, id=request.POST.get('client_id')) if request.POST.get('client_id') else None
     form = ClientForm(request.POST, instance=instance)
     if form.is_valid():
         form.save()
-        return render(request, "projects/partials/client_table.html", {"clients": Client.objects.all()})
+        # return render(request, "projects/partials/client_table.html", {"clients": Client.objects.all()})
+        return trigger_client_event(HttpResponse(), "clientSaved")
     
     # Return form with errors back to modal
     return render(request, "projects/partials/client_form.html", {"form": form})
@@ -37,7 +31,8 @@ def save_project(request):
     form = ProjectForm(request.POST, instance=instance)
     if form.is_valid():
         form.save()
-        return render(request, "projects/partials/project_table.html", {"projects": Project.objects.select_related('client').all()})
+        # return render(request, "projects/partials/project_table.html", {"projects": Project.objects.select_related('client').all()})
+        return trigger_client_event(HttpResponse(), "projectSaved")
     return render(request, "projects/partials/project_form.html", {"form": form})
 
 @require_POST
@@ -46,7 +41,8 @@ def save_assignment(request):
     form = ProjectTaskAssignmentForm(request.POST, instance=instance)
     if form.is_valid():
         form.save()
-        return render(request, "projects/partials/assignment_table.html", {"assignments": ProjectTaskAssignment.objects.select_related('project', 'task', 'subtask').all()})
+        # return render(request, "projects/partials/assignment_table.html", {"assignments": ProjectTaskAssignment.objects.select_related('project', 'task', 'subtask').all()})
+        return trigger_client_event(HttpResponse(), "assignmentSaved")
     return render(request, "projects/partials/assignment_form.html", {"form": form})
 
 def load_assignment_form(request, assignment_id=None):
@@ -78,6 +74,8 @@ def client_table(request):
 
 def project_table(request):
     projects = Project.objects.all()
+    for project in projects:
+        print('Client Name: ', project.client)
     return render(request, "projects/partials/project_table.html", {"projects": projects})
 
 def assignment_table(request):

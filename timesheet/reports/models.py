@@ -33,7 +33,7 @@ class ProjectTaskTracking(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'project_task_trakcing_mv'
+        db_table = 'project_task_tracking_mv'
 
 
 class EmployeeUtilizationMV(models.Model):

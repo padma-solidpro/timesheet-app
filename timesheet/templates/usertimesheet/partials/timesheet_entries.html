@@ -1,5 +1,16 @@
 <div id="timesheet-entries">
     <table id="timesheet-table" class="table table-bordered mt-4">
+        <colgroup>
+            <col style="width: 15%;">
+            <col style="width: 10%;">
+            <col style="width: 15%;">
+            <col style="width: 15%;">
+            <col style="width: 15%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 7.5%;">
+            <col style="width: 2.5%;">
+        </colgroup>
         <thead class="table-light">
             <tr class="header-dark">
                 <th>Date</th>
@@ -14,13 +25,13 @@
             </tr>
             <tr class="header-light">
                 <th></th> <!-- Date: sortable only -->
-                <th><select class="form-select form-select-sm" id="projectFilter"><option value="">All</option></select></th>
-                <th><select class="form-select form-select-sm" id="taskFilter"><option value="">All</option></select></th>
+                <th><select id="projectFilter" class="form-select form-select-sm filter"><option value="">All</option></select></th>
+                <th><select id="taskFilter" class="form-select form-select-sm filter"><option value="">All</option></select></th>
                 <th></th>
                 <th></th>
                 <th></th>
                 <th></th>
-                <th></th>
+                <th><select id="statusFilter" class="form-select form-select-sm filter"><option value="">All</option></select></th>
                 <th></th> <!-- Action: no filter -->
             </tr>
         </thead>
@@ -70,8 +81,44 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const hasData = {{ self_has_data|yesno:"true,false" }};
+        console.log("Has data:", hasData);
+        if (!hasData) return;
 
-        if (!hasData) return;  // ⛔ Prevent DataTable init on empty
+        let initialized = false;
+
+        function extractUniqueValuesFromTable(columnIndex) {
+            const values = new Set();
+            $('#timesheet-table tbody tr').each(function () {
+                const cell = $(this).find('td').eq(columnIndex);
+                const value = cell.text().trim();
+                if (value && value !== '-') {
+                    values.add(value);
+                }
+            });
+            const sortedValues = Array.from(values).sort();
+            console.log(`Unique values from column ${columnIndex}:`, sortedValues);
+            return sortedValues;
+        }
+
+        function buildProjectTaskMap() {
+            const map = {};
+            $('#timesheet-table tbody tr').each(function () {
+                const project = $(this).find('td').eq(1).text().trim();
+                const task = $(this).find('td').eq(2).text().trim();
+                if (!map[project]) map[project] = new Set();
+                if (task && task !== '-') map[project].add(task);
+            });
+            console.log("Built project-task map:", map);
+            return map;
+        }
+
+        function initializeTimesheetTable() {
+        if (initialized) {
+            console.log("Table already initialized");
+            return;
+        }
+
+        console.log("Initializing DataTable...");
 
         const table = $('#timesheet-table').DataTable({
             dom: 'lrtip',
@@ -80,43 +127,103 @@
             lengthChange: false,
             fixedHeader: true,
             pageLength: 10,
-            order: [[0, 'desc']],  // Sort by Date
+            order: [[0, 'desc']],
             columnDefs: [
-                { targets: [1, 2], orderable: false },  // Project, Task: filterable but not sortable
-                { targets: [0], orderable: true },      // Date sortable
-                { targets: '_all', orderable: false },  // Everything else not sortable
-            ],
-            initComplete: function () {
-                const api = this.api();
+                { targets: [1, 2], orderable: false },
+                { targets: 0, orderable: true },
+                { targets: '_all', orderable: false }
+            ]
+        });
 
-                // Dynamically insert filter selects in the header
-                const headerRow = $('#timesheet-table thead tr').eq(0);
-                const filterRow = $('<tr>').appendTo($('#timesheet-table thead'));
+        const projectFilter = $('#projectFilter');
+        const taskFilter = $('#taskFilter');
+        const statusFilter = $('#statusFilter');
 
-                headerRow.find('th').each(function (i) {
-                    if ([1, 2].includes(i)) {
-                        // Project or Task
-                        const select = $('<select><option value="">All</option></select>')
-                            .attr('class', 'form-select form-select-sm')
-                            .on('change', function () {
-                                const val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                api.column(i).search(val ? '^' + val + '$' : '', true, false).draw();
-                            });
+        const projectTasksMap = buildProjectTaskMap();
 
-                        // Populate options
-                        api.column(i).data().unique().sort().each(function (d) {
-                            d = d || '-';
-                            if (select.find('option[value="' + d + '"]').length === 0) {
-                                select.append('<option value="' + d + '">' + d + '</option>');
-                            }
-                        });
+        // Populate project dropdown
+        projectFilter.empty().append('<option value="">All</option>');
+        Object.keys(projectTasksMap).sort().forEach(project => {
+            projectFilter.append(`<option value="${project}">${project}</option>`);
+        });
+        console.log("Project filter options populated.");
 
-                        filterRow.append($('<th>').append(select));
-                    } else {
-                        filterRow.append('<th></th>');  // Empty filter cells
-                    }
-                });
+        // Populate all tasks
+        const allTasks = new Set();
+        Object.values(projectTasksMap).forEach(set => {
+            set.forEach(task => allTasks.add(task));
+        });
+        taskFilter.empty().append('<option value="">All</option>');
+        Array.from(allTasks).sort().forEach(task => {
+            taskFilter.append(`<option value="${task}">${task}</option>`);
+        });
+        console.log("Task filter options populated.");
+
+        // Populate status filter
+        const allStatus = new Set();
+        table.rows().every(function () {
+            const cellText = $(this.node()).find('td').eq(7).text().trim(); // Get text from status badge
+            if (cellText) allStatus.add(cellText);
+        });
+
+        statusFilter.empty().append('<option value="">All</option>');
+        Array.from(allStatus).sort().forEach(status => {
+            statusFilter.append(`<option value="${status}">${status}</option>`);
+        });
+        console.log("Status filter options populated.");
+
+        // Project filter change
+        projectFilter.on('change', function () {
+            const selectedProject = $(this).val();
+            console.log("Project selected:", selectedProject);
+            table.column(1).search(selectedProject ? '^' + selectedProject + '$' : '', true, false).draw();
+
+            const relatedTasks = selectedProject ? projectTasksMap[selectedProject] || new Set() : allTasks;
+            taskFilter.empty().append('<option value="">All</option>');
+            Array.from(relatedTasks).sort().forEach(task => {
+                taskFilter.append(`<option value="${task}">${task}</option>`);
+            });
+
+            // Reset task filter
+            taskFilter.val('');
+            table.column(2).search('').draw();
+        });
+
+        // Task filter change
+        taskFilter.on('change', function () {
+            const selectedTask = $(this).val();
+            console.log("Task selected:", selectedTask);
+            table.column(2).search(selectedTask ? '^' + selectedTask + '$' : '', true, false).draw();
+        });
+
+        // Status filter change
+        statusFilter.on('change', function () {
+            const selectedStatus = $(this).val();
+            console.log("Status selected:", selectedStatus);
+            table.column(7).search(selectedStatus ? '^' + selectedStatus + '$' : '', true, false).draw();
+        });
+
+        initialized = true;
+        console.log("Table initialization complete.");
+    }
+
+
+        // Tab activation logic
+        $('a[data-bs-toggle="tab"], button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            const target = $(e.target).attr('href') || $(e.target).data('bsTarget');
+            console.log("Tab shown:", target);
+            if ($(target).find('#timesheet-table').length && !initialized) {
+                console.log("Timesheet table is now visible. Initializing...");
+                requestAnimationFrame(initializeTimesheetTable);
             }
         });
+
+        // Immediate init if already visible
+        if ($('#timesheet-table').is(':visible') && !initialized) {
+            console.log("Timesheet table is already visible. Initializing...");
+            requestAnimationFrame(initializeTimesheetTable);
+        } else {
+            console.log("Timesheet table not visible on load.");
+        }
     });
 </script>

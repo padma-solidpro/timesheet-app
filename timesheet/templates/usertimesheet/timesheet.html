@@ -5,26 +5,14 @@
 {% block content %}
 <div class="container mt-4">
     <h3 class="page-header">My Timesheet</h3>
-
-    <!-- {% if duplicate_entry and error_message %}
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <strong>Warning!</strong> {{ error_message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>  
-    {% endif %} -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
+    <div id="messages">
+        <!-- Error/Success messages will appear here -->
+    </div>
     <!-- Timesheet Form -->
     <form method="post" action="{% url 'submit_timesheet_entries' %}">
         {% csrf_token %}
         <div class="row mb-3">
-            <div class="col-md-3">
+            <div class="col-md-3 filter-group">
                 <label>Select Date</label>
                 <input type="date" name="date" class="form-control" value="{{ today|default_if_none:''|date:'Y-m-d' }}">
             </div>
@@ -40,10 +28,10 @@
                     hx-get="{% url 'add_timesheet_row' %}?index={{ index|default:1 }}"
                     hx-target="#timesheet-form-rows"
                     hx-swap="beforeend">
-                + Add Project
+                + Add Timesheet Entry
             </button>
 
-            <button type="submit" class="btn btn-success">Save Timesheet</button>
+            <button type="submit" class="btn btn-success">Submit for Approval</button>
         </div>
     </form>
 
@@ -140,6 +128,13 @@
 </style>
 
   <script>
+
+    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+        if (evt.detail.xhr.getResponseHeader("HX-Trigger") === "showMessage") {
+            htmx.ajax('GET', '{% url "render_messages" %}', '#messages');
+        }
+        });
+
     document.body.addEventListener('htmx:afterOnLoad', function(evt) {
       if (evt.detail.elt && evt.detail.xhr.getResponseHeader('HX-Trigger') === 'timesheetUpdated') {
         const modalEl = document.getElementById('modal');

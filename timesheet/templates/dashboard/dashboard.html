@@ -5,9 +5,9 @@
 <div class="container my-4">
 
     <!-- Filters -->
-    <form method="get" id="dashboardFilters" class="row row-cols-auto g-3 align-items-center mb-4">
-        <div class="col">
-            <select name="project" id="projectFilter" class="form-select"
+    <form method="get" id="filter-form dashboardFilters" class="row row-cols-auto g-3 align-items-stretch mb-4 filter-form">
+        <div class="col filter-group">
+            <select name="project" id="projectFilter" class="form-select h-100"
                     onchange="document.getElementById('dashboardFilters').submit();">
                 <option value="">All Projects</option>
                 {% for project in projects %}
@@ -17,15 +17,15 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col">
-            <input type="date" id="startDate" name="start_date" class="form-control"
-                   value="{{ request.GET.start_date }}" placeholder="Start Date">
+        <div class="col filter-group">
+            <input type="date" id="startDate" name="start_date" class="form-control h-100"
+                value="{{ request.GET.start_date|default:start_date|date:'Y-m-d' }}" placeholder="Start Date">
         </div>
-        <div class="col">
-            <input type="date" id="endDate" name="end_date" class="form-control"
-                   value="{{ request.GET.end_date }}" placeholder="End Date">
+        <div class="col filter-group">
+            <input type="date" id="endDate" name="end_date" class="form-control h-100"
+                value="{{ request.GET.end_date|default:end_date|date:'Y-m-d' }}" placeholder="End Date">
         </div>
-        <div class="col">
+        <div class="col filter-group">
             <button type="submit" class="btn btn-primary">Apply Filters</button>
         </div>
     </form>
@@ -41,7 +41,7 @@
                         <div class="card text-center shadow-sm scorecard h-100">
                             <div class="card-body d-flex flex-column justify-content-center p-2">
                                 <h6 class="card-title text-start mb-1">{{ title }}</h6>
-                                <div class="d-flex align-items-center justify-content-center" style="font-size: 0.9rem;">
+                                <div class="d-flex align-items-center justify-content-center">
                                     <h5 class="card-text mb-0 me-2">{{ value }}</h5>
                                     {% if direction == "up" %}
                                     <span class="text-success d-flex align-items-center">
@@ -98,7 +98,7 @@
                 <h6 class="mb-0">Pending Approvals</h6>
                 <a href="{% url 'usertimesheet' %}?status=Pending" class="btn btn-sm btn-outline-primary">Review</a>
               </div>
-              <div class="d-flex flex-column gap-2">
+              <div class="card-body overflow-auto pt-0">
                 {% for approval in pending_approvals %}
                   <div class="d-flex justify-content-between small fw-medium">
                     <span>{{ approval.date }}</span>
@@ -113,7 +113,7 @@
             <!-- 🔹 Budget Utilization Card -->
             <div class="card p-3 shadow-sm rounded-3">
               <h6 class="mb-3">Projects Nearing/Exceeding Budget</h6>
-              <div class="d-flex flex-column gap-3">
+              <div  class="card-body overflow-auto pt-0">
                 {% for proj in budget_status %}
                   {% if proj.budget_utilization >= 90 %}
                     <div>

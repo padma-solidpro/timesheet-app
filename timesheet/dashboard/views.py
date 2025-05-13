@@ -8,7 +8,7 @@ from collections import defaultdict
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 import json
-
+from django.utils.timezone import now
 
 def calculate_available_hours_from_logs(resource, start_date, end_date):
     logged_dates = Timesheet.objects.filter(
@@ -30,6 +30,7 @@ def dashboard_view(request):
     role = resource.role
     context = {'role': role}
     access_level = resource.role.access_level if resource.role else 0
+    # ========== RESOURCE DASHBOARD (SE / Trainee) ==========
     # ========== RESOURCE DASHBOARD (SE / Trainee) ==========
     if access_level <= 2:
         assigned_projects = resource.assigned_projects.all()
@@ -105,6 +106,26 @@ def dashboard_view(request):
             allotted = float(t.allotted_hours)
             logged = next((float(l['total']) for l in task_logged if l['task_description'] == label), 0.0)
             task_comparison.append({'task': label, 'allotted': allotted, 'logged': logged})
+        
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+
+    # Default to the last 7 days if no dates are provided
+        if not start_date or not end_date:
+           end_date = now().date()
+           start_date = end_date - timedelta(days=7)
+        else:
+        # Convert the dates from strings to datetime objects
+           start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+           end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+    # Filter data based on the date range
+        timesheets = Timesheet.objects.filter(date__range=(start_date, end_date))
+
+        # Calculate summary data
+        total_assigned_projects = timesheets.values('project').distinct().count()
+        total_hours = timesheets.aggregate(total_hours=Sum('hours'))['total_hours'] or 0
+        utilization = (total_hours / (len(timesheets) * 8)) * 100 if timesheets else 0
 
         context.update({
             'total_assigned_projects': total_assigned_projects,
@@ -222,8 +243,8 @@ def dashboard_view(request):
         dept = t.resource.department.name if t.resource.department else "Unknown"
         dept_cost[dept] += t.cost or 0
 
-    dept_cost_labels = list(dept_cost.keys())
-    dept_cost_values = [float(x) for x in dept_cost.values()]
+    # dept_cost_labels = list(dept_cost.keys())
+    # dept_cost_values = [float(x) for x in dept_cost.values()]
 
     res_util_labels, res_util_values = [], []
     for p in projects:
@@ -279,21 +300,24 @@ def dashboard_view(request):
     billable_hours = Timesheet.objects.filter(resource=resource, project__commercial='Billable').aggregate(Sum('hours'))['hours__sum'] or 0
     non_billable_hours = Timesheet.objects.filter(resource=resource, project__commercial='Non-Billable').aggregate(Sum('hours'))['hours__sum'] or 0
 
-    timesheet_summary = []
-    week_start_date = start_date - timedelta(days=start_date.weekday())
-    for r in Resource.objects.filter(assigned_projects__in=projects, status='Active').distinct():
-        submitted = Timesheet.objects.filter(resource=r, date__range=(start_date, end_date)).exists()
-        logged_days = Timesheet.objects.filter(resource=r, date__range=(start_date, end_date)).values_list('date', flat=True).distinct()
-        expected_days = set(start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1) if (start_date + timedelta(days=i)).weekday() < 5)
-        missed_log = sorted(list(expected_days - set(logged_days)))
-        pending_approval = Timesheet.objects.filter(resource=r, status='Pending', date__range=(start_date, end_date)).count()
-        timesheet_summary.append({
-            'resource': r.name,
-            'submitted': submitted,
-            'missed_log': [d.strftime('%Y-%m-%d') for d in missed_log],
-            'approval_pending': pending_approval,
-            'week_start': week_start_date.strftime('%Y-%m-%d')
-        })
+    leave_project = Project.objects.filter(name__iexact='Leave').first()
+    # timesheet_summary = []
+    # week_start_date = start_date - timedelta(days=start_date.weekday())
+    # for r in Resource.objects.filter(assigned_projects__in=projects, status='Active').distinct():
+    #     submitted = Timesheet.objects.filter(resource=r, date__range=(start_date, end_date)).exists()
+    #     logged_days = Timesheet.objects.filter(resource=r, date__range=(start_date, end_date)).values_list('date', flat=True).distinct()
+    #     expected_days = set(start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1) if (start_date + timedelta(days=i)).weekday() < 5)
+    #     missed_log = sorted(list(expected_days - set(logged_days)))
+    #     pending_approval = Timesheet.objects.filter(resource=r, status='Pending', date__range=(start_date, end_date)).count()
+
+
+    #     timesheet_summary.append({
+    #         'resource': r.name,
+    #         'submitted': submitted,
+    #         'missed_log': [d.strftime('%Y-%m-%d') for d in missed_log],
+    #         'approval_pending': pending_approval,
+    #         'week_start': week_start_date.strftime('%Y-%m-%d')
+    #     })
 
     absentees = []
     for r in Resource.objects.filter(assigned_projects__in=projects, status="Active").distinct():
@@ -302,7 +326,18 @@ def dashboard_view(request):
             absentees.append(r.name)
     
     approval_counter = defaultdict(lambda: {"count": 0, "employees": []})
-    pending_approvals = Timesheet.objects.filter(status='Pending').order_by('-date')
+    
+    pending_approvals = Timesheet.objects.filter(
+        (
+            Q(project__in=all_projects) |
+            Q(project=leave_project, resource__reporting_to=resource)
+        ),
+        status__in=["Pending", "Rejected"]
+    ).exclude(resource=resource) \
+        .filter(resource__role__access_level__lt=3) \
+        .order_by('-date')
+
+    # pending_approvals = Timesheet.objects.filter(status='Pending').order_by('-date')
     for approval in pending_approvals:
       readable_date = format(approval.date, 'd M')
       approval_counter[readable_date]["count"] += 1
@@ -325,8 +360,8 @@ def dashboard_view(request):
         "project_colors_cost": mark_safe(json.dumps(project_colors_cost)),
         "project_budget": mark_safe(json.dumps([float(x) for x in project_budget])),
         "project_spent": mark_safe(json.dumps([float(x) for x in project_spent])),
-        "dept_cost_labels": mark_safe(json.dumps(dept_cost_labels)),
-        "dept_cost_values": mark_safe(json.dumps([float(x) for x in dept_cost_values])),
+        # "dept_cost_labels": mark_safe(json.dumps(dept_cost_labels)),
+        # "dept_cost_values": mark_safe(json.dumps([float(x) for x in dept_cost_values])),
         "res_util_labels": mark_safe(json.dumps(res_util_labels)),
         "res_util_values": mark_safe(json.dumps([float(x) for x in res_util_values])),
         "daily_labels": mark_safe(json.dumps([item['date'] for item in daily_trend])),
@@ -336,7 +371,7 @@ def dashboard_view(request):
         "monthly_labels_trend": mark_safe(json.dumps([item['month'] for item in monthly_trend])),
         "monthly_values_trend": mark_safe(json.dumps([item['hours'] for item in monthly_trend])),
         "nearing_budget": budget_status,
-        "timesheet_summary": timesheet_summary,
+        # "timesheet_summary": timesheet_summary,
         "start_date": start_date,
         "end_date": end_date,
         "absentees": absentees,

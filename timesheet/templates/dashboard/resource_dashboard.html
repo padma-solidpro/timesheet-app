@@ -1,76 +1,110 @@
 {% extends 'base.html' %}
 {% load static %}
-
+ 
 {% block content %}
 <div class="container mt-4">
   <h2 class="mb-4">Dashboard</h2>
-
-  <!-- Summary Cards -->
-  <div class="row text-center mb-4">
-    <div class="col-sm-4 col-md-3 mb-2">
-      <div class="card p-2 shadow-sm small-card">
-        <h6>Total Projects</h6>
+ 
+  <form method="get" class="row row-cols-auto g-3 align-items-center mb-4">
+    <div class="col">
+      <input type="date" id="startDate" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
+    </div>
+    <div class="col">
+      <input type="date" id="endDate" name="end_date" class="form-control" value="{{ request.GET.end_date }}">
+    </div>
+    <div class="col align-self-end">
+      <button type="submit" class="btn btn-primary">Apply Filter</button>
+    </div>
+  </form>
+ 
+  <!-- Reduced Size Summary Cards -->
+  <div class="row text-center mb-3">
+    <div class="col-sm-4 col-md-2">
+      <div class="card p-1 shadow-sm small-card ">
+        <h6 class="mb-1" style="font-size: 0.9rem;">Total Projects</h6>
         <h3>{{ total_assigned_projects }}</h3>
       </div>
     </div>
-    <div class="col-sm-4 col-md-3 mb-2">
-      <div class="card p-2 shadow-sm small-card">
-        <h6>Total Hours (Current Week)</h6>
+    <div class="col-sm-4 col-md-2">
+      <div class="card p-1 shadow-sm small-card ">
+        <h6 class="mb-1" style="font-size: 0.9rem;">Total Hours</h6>
         <h3>{{ total_hours }}</h3>
       </div>
     </div>
-    <div class="col-sm-4 col-md-3 mb-2">
-      <div class="card p-2 shadow-sm small-card">
-        <h6>Utilization%</h6>
+    <div class="col-sm-4 col-md-2">
+      <div class="card p-1 shadow-sm small-card">
+        <h6 class="mb-1">Utilization%</h6>
         <h3>{{ utilization }}</h3>
       </div>
     </div>
   </div>
+ 
+  <!-- Row 1: Logged Hours + Worked Hours Summary -->
   <div class="row mb-4">
     <div class="col-md-6" id="loggedHoursSection">
-      <div class="card p-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <h6>Logged Hours</h6>
+      <div class="card chart-container h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="card-title">Logged Hours</h6>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-primary active" onclick="switchLoggedChart('project')">Project</button>
             <button class="btn btn-outline-primary" onclick="switchLoggedChart('task')">Task</button>
           </div>
         </div>
-        <canvas id="loggedChart" class="chart-canvas"></canvas>
+        <div class="card-body p-2">
+          <div class="chart-wrapper">
+            <canvas id="loggedChart"></canvas>
+          </div>
+        </div>
       </div>
     </div>
-  
+ 
     <div class="col-md-6" id="workedHoursSummarySection">
-      <div class="card p-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <h6>Worked Hours Summary</h6>
+      <div class="card chart-container h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="card-title">Worked Hours Summary</h6>
           <div class="btn-group btn-group-sm">
             <button id="btn-week" class="btn btn-outline-primary active" onclick="switchView('week')">Weekly</button>
             <button id="btn-month" class="btn btn-outline-primary" onclick="switchView('month')">Monthly</button>
           </div>
         </div>
-        <canvas id="timeSummaryChart" class="chart-canvas"></canvas>
+        <div class="card-body p-2">
+          <div class="chart-wrapper">
+            <canvas id="timeSummaryChart"></canvas>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  
-  <!-- Row 2: Billable vs Non-Billable + Allotted vs Logged (per Task) -->
+ 
+  <!-- Row 2: Billable vs Non-Billable + Allotted vs Logged -->
   <div class="row mb-4">
     <div class="col-md-4" id="billableHoursSection">
-      <div class="card p-3">
-        <h6>Billable vs Non-Billable Hours</h6>
-        <canvas id="billableChart" class="chart-canvas"></canvas>
+      <div class="card chart-container h-100">
+        <div class="card-header">
+          <h6 class="card-title">Billable vs Non-Billable Hours</h6>
+        </div>
+        <div class="card-body p-2">
+          <div class="chart-wrapper">
+            <canvas id="billableChart"></canvas>
+          </div>
+        </div>
       </div>
     </div>
-  
+ 
     <div class="col-md-8" id="allottedVsLoggedSection">
-      <div class="card p-3">
-        <h6>Allotted vs Logged Hours (per Task)</h6>
-        <canvas id="allottedChart" class="chart-canvas"></canvas>
+      <div class="card chart-container h-100">
+        <div class="card-header">
+          <h6 class="card-title">Allotted vs Logged Hours (per Task)</h6>
+        </div>
+        <div class="card-body p-2">
+          <div class="chart-wrapper">
+            <canvas id="allottedChart"></canvas>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
+</div>
 
 <!-- ChartJS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -97,34 +131,6 @@ const loggedChartData = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-
-  // Project-wise Chart
-  projectChart = new Chart(document.getElementById("projectChart"), {
-    type: "bar",
-    data: {
-      labels: {{ project_hours_labels|safe }},
-      datasets: [{
-        label: "Hours Logged",
-        data: {{ project_hours_values|safe }},
-        backgroundColor: "#36b9cc"
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        tooltip: { enabled: true },
-        legend: { display: true }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { stepSize: 1 }
-        }
-      }
-    }
-  });
-
   // Logged Hours Chart (Initial: Project)
   loggedChart = new Chart(document.getElementById("loggedChart"), {
     type: "bar",
@@ -161,8 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Time Summary Chart
-  const ctx = document.getElementById("timeSummaryChart").getContext("2d");
-  timeSummaryChart = new Chart(ctx, {
+  timeSummaryChart = new Chart(document.getElementById("timeSummaryChart"), {
     type: "line",
     data: {
       labels: weeklyLabels,

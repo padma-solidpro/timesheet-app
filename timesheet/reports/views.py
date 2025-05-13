@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from core.models import Timesheet
+from core.models import Timesheet, Resource
 from .models import ProjectReportMV, ProjectTaskTracking, EmployeeUtilizationMV
 from decimal import Decimal
 from datetime import date, timedelta
@@ -7,11 +7,19 @@ from collections import defaultdict
 from django.db.models import Q
 
 def reports_view(request):
-    report_type = request.GET.get('report_type', 'project_cost_tracking')
+    report_type = request.GET.get('report_type', 'timesheet_log_reports')
     report_data = []
     table_headers = []
     template_name = 'reports/reports_table_project_cost.html'
 
+    resource = request.user.resource
+    role = resource.role
+    role_name = role.name
+    access_level = role.access_level
+
+
+    default_start=''
+    default_end=''
     if report_type == 'project_cost_tracking':
         queryset = ProjectReportMV.objects.all()
         report_data_list = []
@@ -115,14 +123,26 @@ def reports_view(request):
         default_start = today.replace(day=1)
         default_end = (default_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
-        # Get date range from request
-        start_date_str = request.GET.get('start_date')
-        end_date_str = request.GET.get('end_date')
-        start_date = date.fromisoformat(start_date_str) if start_date_str else default_start
-        end_date = date.fromisoformat(end_date_str) if end_date_str else default_end
+        week_filter = request.GET.get('week_filter')
+        if week_filter == 'low_hours':
+            # Set range to last Mon–Fri (last week)
+            weekday = today.weekday()
+            last_friday = today - timedelta(days=weekday + 3)  # Previous Friday
+            last_monday = last_friday - timedelta(days=4)
+            start_date = last_monday
+            end_date = last_friday
+            print('Start Date: ', start_date)
+            print('End Date: ', end_date)
+        else:
+            # Get date range from request
+            start_date_str = request.GET.get('start_date')
+            end_date_str = request.GET.get('end_date')
+            start_date = date.fromisoformat(start_date_str) if start_date_str else default_start
+            end_date = date.fromisoformat(end_date_str) if end_date_str else default_end
 
         qs = EmployeeUtilizationMV.objects.filter(date__range=(start_date, end_date))
 
+        print(qs)
         # Group data by employee
         emp_data = defaultdict(lambda: {
             'emp_name': '',
@@ -171,6 +191,15 @@ def reports_view(request):
                 'non_billable_cost': f"{data['non_billable_cost']:.2f}",
                 'utilization_percent': f"{utilization:.2f}",
             })
+        
+        print('Before filtering the low hours: ', report_data_list)
+
+
+        if week_filter == 'low_hours':
+
+            report_data_list = [d for d in report_data_list if Decimal(d['total_hours']) < 140]
+
+        print('After filtering the low hours: ', report_data_list)
 
         report_data = report_data_list
         table_headers = [
@@ -206,14 +235,15 @@ def reports_view(request):
         # Access control
         user = request.user
         resource = getattr(user, 'resource', None)
+        print("Before filtering the user record based on the reporting: ", qs)
         if resource:
-            access_level = getattr(user.resource, 'access_level', None)
             if access_level is not None:
                 if access_level <= 2:
                     qs = qs.filter(resource=resource)
                 elif access_level == 3:
                     reporting_emp_ids = Resource.objects.filter(reporting_to=resource).values_list('id', flat=True)
                     qs = qs.filter(resource_id__in=reporting_emp_ids)
+                    print("Reporting user log reports: ", qs)
                 # access_level == 4 => all records, no filtering
 
         report_data_list = []
@@ -249,7 +279,7 @@ def reports_view(request):
     
             
     context = {
-        'report_type': report_type,
+        'report_type': request.GET.get('report_type', 'timesheet_log_reports'),
         'template_name': template_name,
 
         'report_data': report_data,
@@ -257,8 +287,11 @@ def reports_view(request):
         'filterable_columns': filterable_columns,
         'unsortable_columns': unsortable_columns,
         'has_data': bool(report_data),
-
+        'start_date': default_start.strftime('%Y-%m-%d') if isinstance(default_start, date) else '',
+        'end_date': default_end.strftime('%Y-%m-%d') if isinstance(default_end, date) else '',
+        'access_level': access_level,
     }
+    print("Report Type: ", report_type)
     # return render(request, 'reports_table_project_cost.html', context)
     return render(request, 'reports/reports.html', context)
 

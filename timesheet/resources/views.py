@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from core.models import Resource
+from core.models import Resource, Role
 from .forms import ResourceForm
 from django.template.loader import render_to_string
 from django.contrib.auth.models import User
@@ -10,9 +10,11 @@ from django.contrib.auth.hashers import make_password
 ROLE_HIERARCHY = {
     'Software Engineer': 'Project Lead',
     'Software Engineer Trainee': 'Project Lead',
+    'Senior Software Engineer': 'Project Lead',
     'Project Lead': 'Delivery Lead',
     'Delivery Lead': 'Department Head',
 }
+
 ALLOWED_LOGIN_ROLES = ['Project Lead', 'Delivery Lead', 'Department Head']
 
 @login_required
@@ -92,15 +94,35 @@ def load_resource_form(request, pk):
     return HttpResponse(html)
 
 def load_reporting_to_options(request):
-    role = request.GET.get('role')
+    role_id = request.GET.get('role')
     selected_id = request.GET.get('selected_id')
-    reporting_to_role = ROLE_HIERARCHY.get(role)
 
-    if reporting_to_role:
-        reporting_to_options = Resource.objects.filter(role__iexact=reporting_to_role)
+    access_level = None
+
+    # Get access_level from Role model
+    if role_id:
+        try:
+            role = Role.objects.get(id=role_id)
+            access_level = role.access_level
+        except Role.DoesNotExist:
+            print(f"Role with ID {role_id} not found.")
+
+    # Determine the reporting_to access level based on custom mapping
+    reporting_access_level = None
+    if access_level in [1, 2]:
+        reporting_access_level = 3
+    elif access_level == 3:
+        reporting_access_level = 4
+    elif access_level == 4:
+        reporting_access_level = 5
+
+    # Get matching resources
+    if reporting_access_level:
+        reporting_to_options = Resource.objects.filter(role__access_level=reporting_access_level)
     else:
         reporting_to_options = Resource.objects.none()
 
+    # Render the dropdown HTML
     html = render_to_string('resources/reporting_to_dropdown.html', {
         'reporting_to_options': reporting_to_options,
         'selected_id': selected_id,

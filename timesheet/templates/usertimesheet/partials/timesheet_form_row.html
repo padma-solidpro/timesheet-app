@@ -1,6 +1,6 @@
 <!-- <div class="row align-items-end mb-2"> -->
 <div class="row align-items-end mb-2" id="row-{{ index }}">
-    <div class="col-md-2">
+    <div class="col-md-2 filter-group">
         <select name="project_{{ index }}" class="form-control" placeholder="Project"
                 hx-get="{% url 'get_project_tasks' %}?index={{ index }}"
                 hx-target="#task-select-{{ index }}"
@@ -12,7 +12,7 @@
         </select>
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-2 filter-group">
         <select name="task_{{ index }}" class="form-control" id="task-select-{{ index }}" placeholder="Task"
                 hx-get="{% url 'get_task_subtasks' %}?index={{ index }}"
                 hx-target="#subtask-select-{{ index }}"
@@ -21,17 +21,17 @@
         </select>
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-2 filter-group">
         <select name="subtask_{{ index }}" class="form-control" id="subtask-select-{{ index }}" placeholder="Subtask">
             <option value="">-- Select Subtask --</option>
         </select>
     </div>
 
-    <div class="col-md-3">
-        <input type="text" name="description_{{ index }}" class="form-control" placeholder="Enter Description">
+    <div class="col-md-2 filter-group">
+        <textarea name="description_{{ index }}" class="form-control" placeholder="Enter Description"></textarea>
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-2 filter-group">
         <input type="number" step="0.01" name="hours_{{ index }}" class="form-control" placeholder="Enter Hours">
     </div>
 
