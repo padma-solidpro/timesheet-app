@@ -9,31 +9,11 @@
         <!-- Error/Success messages will appear here -->
     </div>
     <!-- Timesheet Form -->
-    <form method="post" action="{% url 'submit_timesheet_entries' %}">
-        {% csrf_token %}
-        <div class="row mb-3">
-            <div class="col-md-3 filter-group">
-                <label>Select Date</label>
-                <input type="date" name="date" class="form-control" value="{{ today|default_if_none:''|date:'Y-m-d' }}">
-            </div>
-        </div>
-
-        <div id="timesheet-form-rows">
-            <!-- Initial Row -->
-            {% include 'usertimesheet/partials/timesheet_form_row.html' with index=0 assigned_projects=assigned_projects %}
-        </div>
-
-        <div class="mt-3">
-            <button type="button" class="btn btn-secondary"
-                    hx-get="{% url 'add_timesheet_row' %}?index={{ index|default:1 }}"
-                    hx-target="#timesheet-form-rows"
-                    hx-swap="beforeend">
-                + Add Timesheet Entry
-            </button>
-
-            <button type="submit" class="btn btn-success">Submit for Approval</button>
-        </div>
-    </form>
+    <div id="timesheet-form-rows">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#timesheetModal">
+            Add Timesheet Entry
+        </button>
+    </div>
 
     <!-- Table of Added Entries -->
     <div class="mt-5">
@@ -121,45 +101,120 @@
             </div>
         </div>
     </div>
+<!-- TimeSheet Modal Form for Log time entry -->
+    <!-- Modal -->
+    <div class="modal fade" id="timesheetModal" tabindex="-1" aria-labelledby="timesheetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+        <form method="POST" action="{% url 'submit_timesheet_entries' %}">
+            {% csrf_token %}
+            <div class="modal-header">
+            <h5 class="modal-title" id="timesheetModalLabel">Log Timesheet</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+            <!-- Date Field -->
+            <div class="mb-3">
+                
+                <input type="text" id="timesheet-date" name="date" class="form-control" placeholder="Select Date" style="width: 180px;" value="{{ selected_date }}">
+            </div>
+
+            <!-- Timesheet Entry Table -->
+            <div class="table-wrapper px-3"></div>
+                <table class="table table-borderless align-middle">
+                    <thead class="table-light">
+                        <tr>
+                        <th>Project</th>
+                        <th>Task</th>
+                        <th>Subtask</th>
+                        <th>Description</th>
+                        <th>Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entryRows">
+                        {% include "usertimesheet/partials/timesheet_form_row.html" with index=0 %}
+                    </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-2 px-3">
+                <button type="button" class="btn btn-outline-secondary"
+                        hx-get="{% url 'add_timesheet_row' %}"
+                        hx-vals='{"index": 1}'
+                        hx-target="#entryRows"
+                        hx-swap="beforeend"
+                        id="add-row-btn">
+                    + Add Row
+                </button>
+                </div>
+
+            <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Submit for Approval</button>
+            </div>
+        </form>
+        </div>
+    </div>
+</div>
+
 <style>
     #timesheetTabsContent {
         background-color: white;
     }
 </style>
 
-  <script>
+<script>
+// Initialize date picker
+flatpickr("#timesheet-date", {
+    dateFormat: "Y-m-d",
+    defaultDate: "today"
+  });
 
-    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
-        if (evt.detail.xhr.getResponseHeader("HX-Trigger") === "showMessage") {
-            htmx.ajax('GET', '{% url "render_messages" %}', '#messages');
-        }
+ let rowIndex = 1;
+
+document.getElementById("add-row-btn").addEventListener("click", function () {
+    this.setAttribute("hx-vals", JSON.stringify({ index: rowIndex }));
+    rowIndex++;
+  });
+
+document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+    if (evt.detail.xhr.getResponseHeader("HX-Trigger") === "showMessage") {
+        htmx.ajax('GET', '{% url "render_messages" %}', '#messages');
+    }
+    });
+
+document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+    if (evt.detail.elt && evt.detail.xhr.getResponseHeader('HX-Trigger') === 'timesheetUpdated') {
+    const modalEl = document.getElementById('modal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal?.hide();
+
+    // Required manual cleanup
+    setTimeout(() => {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style = '';
+    }, 300);
+
+    htmx.ajax('GET', '/usertimesheet/entries/', '#timesheet-entries');
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const selectAll = document.getElementById("select-all");
+    if (selectAll) {
+        selectAll.addEventListener("change", () => {
+            document.querySelectorAll(".row-check").forEach(cb => cb.checked = selectAll.checked);
         });
+    }
+});
 
-    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
-      if (evt.detail.elt && evt.detail.xhr.getResponseHeader('HX-Trigger') === 'timesheetUpdated') {
-        const modalEl = document.getElementById('modal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal?.hide();
-    
-        // Required manual cleanup
-        setTimeout(() => {
-          document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-          document.body.classList.remove('modal-open');
-          document.body.style = '';
-        }, 300);
-    
-        htmx.ajax('GET', '/usertimesheet/entries/', '#timesheet-entries');
-      }
-    });
+// script for removing rows
+function removeRow(index) {
+const row = document.getElementById(`row_${index}`);
+if (row) row.remove();
+}
 
-    document.addEventListener("DOMContentLoaded", function () {
-        const selectAll = document.getElementById("select-all");
-        if (selectAll) {
-            selectAll.addEventListener("change", () => {
-                document.querySelectorAll(".row-check").forEach(cb => cb.checked = selectAll.checked);
-            });
-        }
-    });
 
-    </script>
+</script>
 {% endblock %}
