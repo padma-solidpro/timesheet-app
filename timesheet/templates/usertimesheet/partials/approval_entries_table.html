@@ -62,68 +62,123 @@
     </table>
 </div>
 
-<style>
-    #approval-table_wrapper {
-        overflow-x: hidden;
-    }
-</style>
-
-
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const hasData = {{ aprv_has_data|yesno:"true,false" }};
+  document.addEventListener('DOMContentLoaded', function () {
+    const hasData = {{ aprv_has_data|yesno:"true,false" }};
+    if (!hasData) return;
 
-        if (!hasData) return;  // ⛔ Prevent DataTable initialization entirely
+    const tableElement = $('#approval-table');
+    const filterCols = [2, 3, 6];  // Columns with dropdown filters
 
-        const tableElement = $('#approval-table');
-        const table = tableElement.DataTable({
-            dom: 'lrtip',
-            orderCellsTop: true,
-            searching: true,
-            lengthChange: false,
-            fixedHeader: true,
-            pageLength: 10,
-            order: [[1, 'desc']],
-            columnDefs: [
-                { targets: [0, 2, 3, 4, 5, 6, 7], orderable: false },
-            ],
-            initComplete: function () {
-                const api = this.api();
+    const table = tableElement.DataTable({
+      dom: 'lrtip',
+      orderCellsTop: true,
+      searching: true,
+      lengthChange: false,
+      fixedHeader: true,
+      pageLength: 10,
+      scrollY: '250px',
+      scrollCollapse: true,
+      order: [[1, 'desc']],
+      columnDefs: [
+        { targets: [0, 2, 3, 4, 5, 6, 7], orderable: false },
+      ],
+      initComplete: function () {
+        const api = this.api();
 
-                // Set up dropdown filters
-                [2, 3, 6].forEach(function (colIndex) {
-                    const column = api.column(colIndex);
-                    const select = $('select[data-column="' + colIndex + '"]');
+        // Initialize filter dropdowns
+        filterCols.forEach(function (colIdx) {
+          const column = api.column(colIdx);
+          const select = $(`select[data-column="${colIdx}"]`);
 
-                    column.data().unique().sort().each(function (d) {
-                        if (d && select.find('option[value="' + d + '"]').length === 0) {
-                            select.append('<option value="' + d + '">' + d + '</option>');
-                        }
-                    });
+          select.empty().append('<option value="">All</option>');
+          const uniqueValues = new Set();
 
-                    select.on('change', function () {
-                        const val = $.fn.dataTable.util.escapeRegex($(this).val());
-                        column.search(val ? '^' + val + '$' : '', true, false).draw();
-                    });
-                });
+          column.data().each(function (d) {
+            const clean = $('<div>').html(d).text().trim();
+            uniqueValues.add(clean);
+          });
 
-                // Optional URL param filter
-                const urlParams = new URLSearchParams(window.location.search);
-                const status = urlParams.get('status');
-                if (status) {
-                    const statusSelect = $('select[data-column="6"]');
-                    statusSelect.val(status).trigger('change');
-                    const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
-                    window.history.replaceState({}, document.title, cleanUrl);
-                }
-            }
+          Array.from(uniqueValues).sort().forEach(function (val) {
+            select.append(`<option value="${val}">${val}</option>`);
+          });
+
+          select.on('change', function () {
+            const val = $.fn.dataTable.util.escapeRegex($(this).val());
+            column.search(val ? '^' + val + '$' : '', true, false).draw();
+            updateAllDropdowns(api, filterCols);  // Interdependent behavior
+          });
         });
 
-        // Select-all checkbox
-        document.getElementById('select-all')?.addEventListener('change', function () {
-            document.querySelectorAll('input[name="record_ids"]').forEach(cb => {
-                cb.checked = this.checked;
+        const urlParams = new URLSearchParams(window.location.search);
+        let status = urlParams.get('status');
+
+        console.log('URL Params:', window.location.search); // Log the entire query string
+        console.log('Status from URL:', status); // Log the status value from the URL query param
+
+        if (status) {
+          // Clean the status by removing trailing slashes or any other unwanted characters
+          status = status.replace(/\/$/, ''); // Remove trailing slash, if any
+
+          // Capitalize the first letter of the status
+          status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+
+          console.log('Cleaned Status (Capitalized):', status); // Log the cleaned and capitalized status value
+
+          // Find the select element for column 6 (status)
+          const select = $(`select[data-column="6"]`);
+
+          // Check if the select element is found
+          if (select.length) {
+            console.log('Select element found:', select); // Log the select element
+            select.val(status).trigger('change'); // Set the cleaned value and trigger change event
+          } else {
+            console.error('Select element not found!');
+          }
+
+          // Clean URL (remove query param)
+          const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+
+          console.log('Clean URL:', cleanUrl); // Log the cleaned URL
+
+          // Replace the URL in the browser's address bar
+          window.history.replaceState({}, document.title, cleanUrl); 
+        }
+
+
+        // Update all dropdowns based on filtered rows (interdependent dropdown logic)
+        function updateAllDropdowns(api, filterCols) {
+          const filteredData = api.rows({ search: 'applied' }).data().toArray();
+
+          filterCols.forEach(function (colIdx) {
+            const select = $(`select[data-column="${colIdx}"]`);
+            const selectedVal = select.val();
+            const values = new Set();
+
+            filteredData.forEach(function (row) {
+              const val = $('<div>').html(row[colIdx]).text().trim();
+              values.add(val);
             });
-        });
+
+            select.empty().append('<option value="">All</option>');
+            Array.from(values).sort().forEach(function (val) {
+              select.append(`<option value="${val}">${val}</option>`);
+            });
+
+            if (selectedVal !== '') {
+              select.val(selectedVal);
+            }
+          });
+        }
+      }
     });
+
+    // "Select All" checkbox
+    document.getElementById('select-all')?.addEventListener('change', function () {
+      document.querySelectorAll('input[name="record_ids"]').forEach(cb => {
+        cb.checked = this.checked;
+      });
+    });
+    
+});
 </script>

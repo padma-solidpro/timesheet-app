@@ -1,6 +1,6 @@
 {% load report_filters %}
 <div style="overflow-x: auto;">
-  <table id="{{ report_type }}Table" class="table display-report-table">
+  <table id="{{ report_type }}Table" class="table display-report-table w-100">
     <thead>
       <!-- Sortable Header Row -->
       <tr class="header-dark">
@@ -18,7 +18,7 @@
         {% for header in table_headers %}
           <th>
             {% if header.title in filterable_columns %}
-              <select data-column="{{ forloop.counter0 }}" class="form-select form-select-sm filter">
+              <select data-column="{{ forloop.counter0 }}" class="form-select form-select-sm filter mx-auto">
                 <option value="">All</option>
                 {% for row in report_data|unique_values:header.data %}
                   <option value="{{ row.key }}">{{ row.key }}</option>
@@ -68,6 +68,8 @@
       dom: 'Blrtip',
       orderCellsTop: true, // crucial when using multiple header rows
       fixedHeader: true,
+      scrollY: '400px',          // Vertical scroll height
+      scrollCollapse: true, 
       searching: true,
       lengthChange: true,
       buttons: hasData ? [{

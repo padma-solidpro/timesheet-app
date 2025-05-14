@@ -1,7 +1,9 @@
+/* ======================================================
+   Root Variables
+====================================================== */
 :root {
-    /* Define custom font sizes and theme variables */
-    --font-size-header: 0.95rem;
-    --font-size-body: 0.9rem;
+    --font-size-header: 0.87rem;
+    --font-size-body: 0.85rem;
     --font-size-page-header: 1.5rem;
     --font-size-sub-header: 1rem;
     --bs-border-radius: 0.375rem;
@@ -9,44 +11,204 @@
     --my-table-row-even: #f0f0f5;
 }
 
-/* Font size for sub-section headers */
-.sub-header {
-    font-size: var(--font-size-sub-header) !important;
-}
-
-/* Font size for main page headers */
+/* ======================================================
+   Typography
+====================================================== */
 .page-header {
     font-size: var(--font-size-page-header) !important;
 }
 
-/* Font style for buttons, labels, and dropdowns */
-.btn, label, #report_type {
+.sub-header {
+    font-size: var(--font-size-sub-header) !important;
+}
+
+label, .btn, #report_type {
     font-size: var(--font-size-header) !important;
     font-family: 'Arial', sans-serif;
 }
 
-/* Set max height and scroll for tab content (e.g., timesheet table) */
-#timesheetTabsContent {
-    height: 310px;
-    overflow-y: auto;
+table tbody td {
+    font-size: var(--font-size-body);
+    font-family: 'Arial', sans-serif;
+    text-align: center;
+    font-weight: 400 !important;
 }
 
-/* Remove all borders in table-bordered */
-.table-bordered, 
-.table-bordered th, 
+/* ======================================================
+   Buttons
+====================================================== */
+.dt-button.dt-custom-download {
+    font-size: var(--font-size-header) !important;
+    font-family: 'Arial', sans-serif !important;
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+    color: white !important;
+    font-weight: 400 !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--bs-border-radius) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+/* ======================================================
+   Input / Select Fields
+====================================================== */
+select.form-select-sm,
+input.form-control,
+select.form-control,
+textarea.form-control {
+    font-size: var(--font-size-body) !important;
+    font-family: 'Arial', sans-serif !important;
+    padding: 2px 6px;
+    padding-left: 10px;
+    height: 32px;
+    text-align: center;
+    box-sizing: border-box;
+    vertical-align: bottom;
+}
+
+/* .form-control */
+.form-select
+ {
+    /* width: auto; */
+    /* min-width: 150px !important;         enough for placeholders like "All Projects"
+    max-width: 250px !important;         prevent stretching too wide
+    padding-right: 2rem;      ensure arrow space */
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    /* overflow: hidden; */
+}
+
+
+select.form-select.form-select-sm.filter, 
+select.form-select-sm.me-2 {
+    font-size: var(--font-size-body);
+    font-family: 'Arial', sans-serif;
+}
+
+/* ======================================================
+   Common Layouts / Utility
+====================================================== */
+.header-stack {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* ======================================================
+   Form Filter Section
+====================================================== */
+#filter-form,
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 10px !important;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.filter-group label {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.filter-group select,
+.filter-group input,
+.filter-group button {
+    height: 32px;
+    font-size: 14px;
+    padding: 2px 8px;
+}
+
+.filter-group button {
+    padding: 4px 12px;
+}
+
+/* ======================================================
+   DataTables Specific Styles
+====================================================== */
+#timesheetTabsContent {
+    height: 350px;
+    overflow-y: hidden;
+}
+
+.dataTables_scrollBody {
+    overflow-y: auto !important;
+    /* max-height: 300px !important; */
+}
+
+table.dataTable {
+    width: 100% !important;
+}
+
+table.dataTable tbody td {
+    padding: 5px 10px !important;
+    line-height: 1.5 !important;
+}
+
+table.dataTable thead > tr > th.sorting::before,
+table.dataTable thead > tr > th.sorting::after,
+table.dataTable thead > tr > th.sorting_asc::before,
+table.dataTable thead > tr > th.sorting_desc::after {
+    opacity: 1 !important;
+    color: #000;
+    background-color: #fff;
+}
+
+/* ======================================================
+   Table - Common (Both DataTables + Bootstrap Table)
+====================================================== */
+.table-bordered,
+.table-bordered th,
 .table-bordered td {
     border: none !important;
 }
 
-/* Add only bottom border to table cells */
-.table-bordered th, 
-.table-bordered td {
+.table-bordered th,
+.table-bordered td,
+table.dataTable tbody tr {
     border-bottom: 1px solid #dee2e6 !important;
+    height: 40px !important;
+    padding: 5px 10px !important;
+    vertical-align: middle;
+    text-align: center;
 }
 
-/* Dark-themed table header style ##00305B */
+/* Row Backgrounds */
+.table tbody tr.odd > *,
+.table tbody tr:nth-of-type(odd) > * {
+    background-color: var(--my-table-row-odd) !important;
+}
+
+.table tbody tr.even > *,
+.table tbody tr:nth-of-type(even) > * {
+    background-color: var(--my-table-row-even) !important;
+}
+
+.table.table-striped tbody tr:nth-of-type(odd) > td {
+    --bs-table-bg-type: var(--my-table-row-odd) !important;
+}
+
+.table.table-striped tbody tr:nth-of-type(even) > td {
+    --bs-table-bg-type: var(--my-table-row-even) !important;
+}
+
+/* ======================================================
+   Table Headers
+====================================================== */
 table > thead > tr.header-dark > th {
-    background-color: #07017b !important;  
+    background-color: #07017b !important;
     color: white;
     font-family: 'Arial', sans-serif;
     font-weight: bold;
@@ -56,7 +218,6 @@ table > thead > tr.header-dark > th {
     border-bottom: 2px solid white;
 }
 
-/* Light-themed table header style */
 table > thead > tr.header-light > th {
     background-color: #f8f9fa !important;
     color: black;
@@ -64,105 +225,21 @@ table > thead > tr.header-light > th {
     font-weight: 400 !important;
     font-size: var(--font-size-header) !important;
     text-align: center;
-    padding: 0.75rem;
+    padding: 0.2rem 0.5rem;
     border-bottom: 2px solid white;
 }
 
-/* Table row background colors (odd rows) */
-.table tbody tr.odd > *,
-.table tbody tr:nth-of-type(odd) > * {
-    background-color: var(--my-table-row-odd) !important;
-}
-
-/* Table row background colors (even rows) */
-.table tbody tr.even > *,
-.table tbody tr:nth-of-type(even) > * {
-    background-color: var(--my-table-row-even) !important;
-}
-
-/* For .table-striped tables, override odd row background color */
-.table.table-striped tbody tr:nth-of-type(odd) > td {
-    --bs-table-bg-type: var(--my-table-row-odd) !important;
-}
-
-/* For .table-striped tables, override even row background color */
-.table.table-striped tbody tr:nth-of-type(even) > td {
-    --bs-table-bg-type: var(--my-table-row-even) !important;
-}
-
-/* Styling for filter dropdowns in headers */
-select.form-select.form-select-sm.filter, 
-select.form-select-sm.me-2 {
-    font-size: var(--font-size-body);
-    font-family: 'Arial', sans-serif;
-}
-
-/* Table body cell styles */
-table tbody td {
-    font-size: var(--font-size-body);
-    font-family: 'Arial', sans-serif;
-    text-align: center;
-    font-weight: 400 !important;
-}
-
-/* Ensure sorting icons are visible */
-th.sorting::before,
-th.sorting::after {
-    opacity: 1 !important;
-    color: #000;
-    background-color: #fff;
-}
-
-/* Keep sort icons visible for active sort state */
-table.dataTable thead > tr > th.sorting_asc::before,
-table.dataTable thead > tr > th.sorting_desc::after,
-table.dataTable thead > tr > td.sorting_asc::before,
-table.dataTable thead > tr > td.sorting_desc::after {
-    opacity: 1 !important;
-    color: #000;
-    background-color: #fff;
-}
-
-/* Align elements horizontally in header stack */
-.header-stack {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-/* Uniform font size for small form inputs and textareas */
-select.form-select-sm,
-input.form-control,
-select.form-control,
-textarea.form-control {
-    font-size: var(--font-size-body) !important;
-    font-family: 'Arial', sans-serif !important;
-}
-
-/* Custom styling for DataTables "Download" button */
-.dt-button.dt-custom-download {
-    font-size: var(--font-size-header, 1rem) !important;
-    font-family: 'Arial', sans-serif !important;
-    background-color: #198754 !important;
-    border-color: #198754 !important;
-    color: white !important;
-    font-weight: 400 !important;
-    padding: 0.5rem 1rem !important;
-    border-radius: var(--bs-border-radius, 0.375rem) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 0.5rem !important;
-}
-
-/*reports page table styles */
-  .report-table {
+/* ======================================================
+   Special Case: Reports Table (Non-DataTable)
+====================================================== */
+.report-table {
     width: 100%;
     border-collapse: collapse;
     font-family: Arial, sans-serif;
     font-size: 13px;
-  }
+}
 
-  .header-cell {
+.header-cell {
     min-width: 150px;
     padding: 8px;
     vertical-align: top;
@@ -173,40 +250,108 @@ textarea.form-control {
     z-index: 2;
     font-weight: bold;
     box-sizing: border-box;
-  }
+}
 
-  .header-tools {
+.header-tools {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 6px;
-  }
+}
 
-  .header-stack {
+.header-stack {
     display: flex;
     flex-direction: column;
     gap: 4px;
-  }
+}
 
-  .filter-select {
+.filter-select {
     font-size: 12px;
     padding: 4px;
     width: 100%;
     box-sizing: border-box;
-  }
+}
 
-  .report-col {
-    min-width: 150px;
+.report-col {
+    min-width: 50px;
     padding: 10px;
     border-bottom: 1px solid #eee;
     box-sizing: border-box;
-  }
+    text-overflow: ellipsis;
+    overflow: hidden;
 
-  .report-table tbody tr:nth-child(even) {
+}
+
+.report-table tbody tr:nth-child(even) {
     background-color: #f9f9f9;
+}
+.display-report-table {
+  table-layout: auto;
+}
+
+
+/* style for timesheet add modal form table */
+.timesheet-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
   }
 
-  .text-center {
-    text-align: center;
+  .timesheet-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-bottom: none;
   }
 
+  .timesheet-table td {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    padding: 0.25rem 0.5rem;
+    vertical-align: middle;
+    border-radius: 0.25rem;
+  }
+
+  .timesheet-table select,
+  .timesheet-table textarea,
+  .timesheet-table input {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .dropdown-arrow {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='gray' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    appearance: none;
+    padding-right: 2rem;
+    border: none;
+  }
+
+  .remove-row-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+  .timesheet-table tbody tr {
+  border-bottom: 1px solid #e0e0e0 !important; /* Light gray line */
+}
+
+.timesheet-table td {
+  border: none; /* Remove previous full borders if set */
+  padding: 0.4rem 0.5rem;
+  background-color: #fff;
+  vertical-align: middle;
+}
+.timesheet-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.table-borderless tbody tr {
+  border-bottom: 1px solid #dee2e6 !important;
+}

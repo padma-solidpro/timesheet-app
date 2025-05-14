@@ -21,10 +21,19 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css">
+    <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Flatpickr CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'css/table.css' %}">
+
     <style>
         body {
             margin: 0;
@@ -106,15 +115,17 @@
             <a href="{% url 'reports' %}" class="{% if request.path == '/reports/' %}active{% endif %}">
                 <i class="fas fa-chart-bar"></i> Reports
             </a>
-            <a href="{% url 'projects' %}" class="{% if request.path == '/projects/' %}active{% endif %}">
-                <i class="fas fa-briefcase"></i> Projects/Clients
-            </a>
-            <a href="{% url 'resources' %}" class="{% if request.path == '/resources/' %}active{% endif %}">
-                <i class="fas fa-users"></i> Team
-            </a>
-            <a href="{% url 'taskmanager' %}" class="{% if request.path == '/taskmanager/' %}active{% endif %}">
-                <i class="fas fa-users"></i> Task Management
-            </a>
+            {% if user_access_level >= 3 %}
+                <a href="{% url 'projects' %}" class="{% if request.path == '/projects/' %}active{% endif %}">
+                    <i class="fas fa-briefcase"></i> Projects/Clients
+                </a>
+                <a href="{% url 'resources' %}" class="{% if request.path == '/resources/' %}active{% endif %}">
+                    <i class="fas fa-users"></i> Team
+                </a>
+                <a href="{% url 'taskmanager' %}" class="{% if request.path == '/taskmanager/' %}active{% endif %}">
+                    <i class="fas fa-users"></i> Task Management
+                </a>
+            {% endif %}
         </div>
 
         <div class="col-md-10 main-content">

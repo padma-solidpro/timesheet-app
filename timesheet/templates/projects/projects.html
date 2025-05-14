@@ -18,7 +18,7 @@
               hx-trigger="click"
               data-bs-toggle="modal" data-bs-target="#clientModal">Add Client</button>
 
-      <div id="clientTable" hx-get="{% url 'client_table' %}" hx-trigger="load"></div>
+      <div id="clientTableWrapper"  data-url="{% url 'client_table' %}"  hx-get="{% url 'client_table' %}" hx-trigger="load" hx-swap="innerHTML"></div>
     </div>
 
     <!-- Projects Tab -->
@@ -28,9 +28,8 @@
               hx-target="#projectModalBody"
               hx-trigger="click"
               data-bs-toggle="modal" data-bs-target="#projectModal">Add Project</button>
-      <div id="projectTableContainer">
-        <div id="projectTable" hx-get="{% url 'project_table' %}" hx-trigger="load"></div>
-      </div>
+
+        <div id="projectTablewrapper" data-url="{% url 'project_table' %}" hx-get="{% url 'project_table' %}" hx-trigger="load" hx-swap="innerHTML"></div>
     </div>
 
     <!-- Assignments Tab -->
@@ -41,7 +40,7 @@
               hx-trigger="click"
               data-bs-toggle="modal" data-bs-target="#assignmentModal">Assign Task</button>
 
-      <div id="assignmentTable" hx-get="{% url 'assignment_table' %}" hx-trigger="load"></div>
+      <div id="assignmentTableWrapper" data-url="{% url 'assignment_table' %}" hx-get="{% url 'assignment_table' %}" hx-trigger="load" hx-swap="innerHTML"></div>
     </div>
   </div>
 </div>
@@ -82,34 +81,185 @@
     </div>
   </div>
 </div>
-
 <script>
-    document.body.addEventListener('htmx:afterSwap', function(evt) {
-      // Check which table was updated and close the respective modal
-      const modals = {
-        "clientTable": "clientModal",
-        "projectTable": "projectModal",
-        "assignmentTable": "assignmentModal"
-      };
-  
-      const targetTableId = evt.detail.target.id;
-      
-      if (modals[targetTableId]) {
-        const modalEl = document.getElementById(modals[targetTableId]);
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-      }
-    });
-  </script>
-  
-<!-- <script>
-    document.body.addEventListener('htmx:afterSwap', function(evt) {
-      if (evt.detail.target.id === "clientTable") {
-        const modalEl = document.getElementById("clientModal");
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-      }
-    });
-  </script> -->
+document.body.addEventListener('assignmentSaved', function () {
+  // Close the active modal
+  const activeModalEl = document.querySelector('.modal.show');
+  if (activeModalEl) {
+    const activeModal = bootstrap.Modal.getInstance(activeModalEl);
+    activeModal.hide();
+  }
 
+  // Reload the assignment table
+  const wrapper = document.getElementById('assignmentTableWrapper');
+  const url = wrapper?.dataset.url;
+  if (url) {
+    htmx.ajax('GET', url, {
+      target: "#assignmentTableWrapper",
+      swap: "innerHTML"
+    });
+  }
+});
+
+document.body.addEventListener('projectSaved', function () {
+  // Close the active modal
+  const activeModalEl = document.querySelector('.modal.show');
+  if (activeModalEl) {
+    const activeModal = bootstrap.Modal.getInstance(activeModalEl);
+    activeModal.hide();
+  }
+
+  // Reload the project table
+  const wrapper = document.getElementById('projectTablewrapper');
+  const url = wrapper?.dataset.url;
+  if (url) {
+    htmx.ajax('GET', url, {
+      target: "#projectTablewrapper",
+      swap: "innerHTML"
+    });
+  }
+});
+
+document.body.addEventListener('clientSaved', function () {
+  // Close the active modal
+  const activeModalEl = document.querySelector('.modal.show');
+  if (activeModalEl) {
+    const activeModal = bootstrap.Modal.getInstance(activeModalEl);
+    activeModal.hide();
+  }
+
+  // Reload the project table
+  const wrapper = document.getElementById('clientTableWrapper');
+  const url = wrapper?.dataset.url;
+  if (url) {
+    htmx.ajax('GET', url, {
+      target: "#clientTableWrapper",
+      swap: "innerHTML"
+    });
+  }
+});
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // Define the map for table IDs and filter columns
+    const tabMap = {
+      'assignments': { tableId: 'assignmentTable', filterCols: [0, 1, 2] },
+      'projects': { tableId: 'projectTable', filterCols: [0, 1, 2] },
+      'clients': { tableId: 'clientTable', filterCols: [0, 1, 2] }
+    };
+
+    // Initialize the default table (clientTable)
+    tryInitTable('clientTable', [0, 1, 2]);
+
+    // Initialize DataTable for specific tables after HTMX swap
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+      console.log("HTMX content swapped. Target:", e.target);
+
+      // Example: if your HTMX swap contains a table
+      if (e.target.id === 'projectTablewrapper') {
+        tryInitTable('projectTable', [0, 1, 2]);
+      }
+      if (e.target.id === 'assignmentTablewrapper') {
+        tryInitTable('assignmentTable', [0, 1, 2]);
+      }
+    });
+
+    // Initialize DataTable when a tab is shown
+    document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
+      tab.addEventListener('shown.bs.tab', function (e) {
+        const targetId = e.target.getAttribute('href').replace('#', '');
+        const config = tabMap[targetId];
+        if (config) {
+          tryInitTable(config.tableId, config.filterCols);
+        }
+      });
+    });
+  });
+
+  // ✅ Shared DataTable initializer
+  function tryInitTable(tableId, filterCols) {
+    const table = document.getElementById(tableId);
+    if (table && !$.fn.DataTable.isDataTable(table)) {
+      initFilterableDataTable(tableId, filterCols);
+    } else if (!$.fn.DataTable.isDataTable(table)) {
+      requestAnimationFrame(() => tryInitTable(tableId, filterCols));
+    }
+  }
+
+  // ✅ The main DataTable logic with filters
+  function initFilterableDataTable(tableId, filterCols = []) {
+    const table = document.getElementById(tableId);
+    if (!table || $.fn.DataTable.isDataTable(table)) return;
+
+    requestAnimationFrame(() => {
+      const dataTable = $(table).DataTable({
+        orderCellsTop: true,
+        fixedHeader: true,
+        initComplete: function () {
+          const api = this.api();
+          console.log(`DataTable initialized for ${tableId}`);
+
+          filterCols.forEach(function (colIdx) {
+            const column = api.column(colIdx);
+            const select = $('thead tr:eq(1) th', table).eq(colIdx).find('select');
+            select.empty().append('<option value="">All</option>');
+
+            const uniqueValues = new Set();
+            column.data().each(function (d) {
+              const cleanedData = $('<div>').html(d).text().trim();
+              uniqueValues.add(cleanedData);
+            });
+
+            Array.from(uniqueValues).sort().forEach(function (d) {
+              select.append(`<option value="${d}">${d}</option>`);
+            });
+
+            select.on('change', function () {
+              const val = $.fn.dataTable.util.escapeRegex($(this).val());
+              column.search(val ? '^' + val + '$' : '', true, false).draw();
+
+              if (val === '') {
+                select.val('');
+              } else {
+                select.val(val);
+              }
+
+              updateOtherDropdowns(api, filterCols);
+            });
+          });
+
+          function updateOtherDropdowns(api, filterCols) {
+            filterCols.forEach(function (colIdx) {
+              const column = api.column(colIdx);
+              const select = $('thead tr:eq(1) th', table).eq(colIdx).find('select');
+              const selectedValue = select.val();
+              const filteredData = api.rows({ search: 'applied' }).data().toArray();
+
+              const filteredValues = new Set();
+              filteredData.forEach(function (rowData) {
+                const cellValue = rowData[colIdx];
+                const cleanedData = $('<div>').html(cellValue).text().trim();
+                if (selectedValue === '' || cleanedData === selectedValue) {
+                  filteredValues.add(cleanedData);
+                }
+              });
+
+              select.empty().append('<option value="">All</option>');
+              Array.from(filteredValues).sort().forEach(function (d) {
+                select.append(`<option value="${d}">${d}</option>`);
+              });
+
+              // Keep selected value in dropdown
+              if (selectedValue !== '') {
+                select.val(selectedValue);
+              } else {
+                column.search('', true, false).draw();
+                select.val('');
+              }
+            });
+          }
+        }
+      });
+    });
+  }
+</script>
 {% endblock %}

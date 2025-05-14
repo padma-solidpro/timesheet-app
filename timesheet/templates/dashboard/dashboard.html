@@ -3,249 +3,499 @@
 
 {% block content %}
 <div class="container my-4">
-    <h2 class="mb-4">Dashboard</h2>
 
-    <!-- Scorecards -->
-    <div class="row mb-4">
-        {% for metric in metrics %}
-            {% with title=metric.0 value=metric.1 %}
-                <div class="col-md-2">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ title }}</h5>
-                            <h3 class="card-text">{{ value }}</h3>
+    <!-- Filters -->
+    <form method="get" id="filter-form dashboardFilters" class="row row-cols-auto g-3 align-items-stretch mb-4 filter-form">
+        <div class="col filter-group">
+            <select name="project" id="projectFilter" class="form-select h-100"
+                    onchange="document.getElementById('dashboardFilters').submit();">
+                <option value="">All Projects</option>
+                {% for project in projects %}
+                <option value="{{ project.id }}" {% if request.GET.project == project.id|stringformat:"s" %}selected{% endif %}>
+                    {{ project.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col filter-group">
+            <input type="date" id="startDate" name="start_date" class="form-control h-100"
+                value="{{ request.GET.start_date|default:start_date|date:'Y-m-d' }}" placeholder="Start Date">
+        </div>
+        <div class="col filter-group">
+            <input type="date" id="endDate" name="end_date" class="form-control h-100"
+                value="{{ request.GET.end_date|default:end_date|date:'Y-m-d' }}" placeholder="End Date">
+        </div>
+        <div class="col filter-group">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+        </div>
+    </form>
+
+    <!-- Scorecards + Budget/Donut Charts -->
+    <div class="row h-100">
+        <div class="col-md-9 d-flex flex-column">
+            <div class="mb-2">
+                <div class="row gx-2 gy-2 flex-nowrap overflow-auto">
+                    {% for metric in metrics %}
+                    {% with title=metric.0 value=metric.1 change=metric.2 direction=metric.3 %}
+                    <div class="col-sm-auto">
+                        <div class="card text-center shadow-sm scorecard h-100">
+                            <div class="card-body d-flex flex-column justify-content-center p-2">
+                                <h6 class="card-title text-start mb-1">{{ title }}</h6>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <h5 class="card-text mb-0 me-2">{{ value }}</h5>
+                                    {% if direction == "up" %}
+                                    <span class="text-success d-flex align-items-center">
+                                        <i class="bi bi-arrow-up me-1"></i><small>{{ change }}</small>
+                                    </span>
+                                    {% elif direction == "down" %}
+                                    <span class="text-danger d-flex align-items-center">
+                                        <i class="bi bi-arrow-down me-1"></i><small>{{ change }}</small>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="row gx-3 gy-3 flex-grow-1">
+                <div class="col-md-8">
+                    <div class="card chart-container h-100">
+                        <div class="card-header">
+                            <h6 class="card-title">Project Budget Utilization</h6>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="chart-wrapper">
+                                <canvas id="comboBudgetUtilChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
-            {% endwith %}
-        {% endfor %}
+                <div class="col-md-4">
+                    <div class="card chart-container h-100">
+                        <div class="card-header">
+                            <h6 class="card-title">Billable vs Non-Billable Hours</h6>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="chart-wrapper">
+                                <canvas id="billableChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side tables -->
+        <div class="col-md-3 d-flex flex-column gap-3">
+
+            <!-- 🔹 Pending Approvals Card -->
+            <div class="card p-3 shadow-sm rounded-3">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Pending Approvals</h6>
+                <a href="{% url 'usertimesheet' %}?status=Pending" class="btn btn-sm btn-outline-primary">Review</a>
+              </div>
+              <div class="card-body overflow-auto pt-0">
+                {% for approval in pending_approvals %}
+                  <div class="d-flex justify-content-between small fw-medium">
+                    <span>{{ approval.date }}</span>
+                    <span class="text-muted">{{ approval.resource.name }}</span>
+                  </div>
+                {% empty %}
+                  <div class="text-muted small">No pending approvals</div>
+                {% endfor %}
+              </div>
+            </div>
+          
+            <!-- 🔹 Budget Utilization Card -->
+            <div class="card p-3 shadow-sm rounded-3">
+              <h6 class="mb-3">Projects Nearing/Exceeding Budget</h6>
+              <div  class="card-body overflow-auto pt-0">
+                {% for proj in budget_status %}
+                  {% if proj.budget_utilization >= 90 %}
+                    <div>
+                      <div class="d-flex justify-content-between small fw-medium">
+                        <span>{{ proj.project }}</span>
+                        <span class="{% if proj.budget_utilization > 100 %}text-danger{% else %}text-warning{% endif %}">
+                          {{ proj.budget_utilization }}%
+                        </span>
+                      </div>
+                      <div class="progress" style="height: 4px;">
+                        <div class="progress-bar 
+                                    {% if proj.budget_utilization > 100 %}bg-danger
+                                    {% else %}bg-warning{% endif %}"
+                             style="width: {{ proj.budget_utilization }}%;">
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% empty %}
+                  <div class="text-muted small">No critical budgets</div>
+                {% endfor %}
+              </div>
+            </div>
+          
+        </div>
     </div>
 
-    <!-- Three-section Chart Row -->
-    <div class="row mb-4 align-items-stretch">
-        <div class="col-md-5">
-            <div class="chart-container me-md-1 mb-2 mb-md-0">
-                <h6 class="text-muted">Project-wise Cost Utilization</h6>
-                <div style="height: 200px;"><canvas id="projectUtilChart"></canvas></div>
+    <!-- Resource Utilization + Logged Hours Trend -->
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="card chart-container h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title">Resource Utilization</h6>
+                    <div class="btn-group" role="group" aria-label="Toggle Project/Task">
+                        <input type="radio" class="btn-check" name="utilToggle" id="toggleProject" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="toggleProject">Project</label>
+                        <input type="radio" class="btn-check" name="utilToggle" id="toggleTask" autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="toggleTask">Task</label>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <div class="chart-wrapper">
+                        <canvas id="comboUtilChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="chart-container me-md-1 mb-2 mb-md-0">
-                <h6 class="text-muted">Department-wise Cost</h6>
-                <div style="height: 200px;"><canvas id="deptPieChart"></canvas></div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="chart-container me-md-1 mb-2 mb-md-0">
-                <h6 class="text-danger">Projects Nearing Budget</h6>
-                <ul>
-                    {% for proj in nearing_budget %}
-                        <li><strong>{{ proj.project }}</strong> - {{ proj.utilization }}%</li>
-                    {% empty %}
-                        <li>No projects nearing budget.</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </div>
 
-    <!-- Final Chart Row -->
-    <div class="row mb-4 align-items-stretch">
-        <div class="col-md-5">
-            <div class="chart-container me-md-2 mb-2 mb-md-0">
-                <h6 class="text-muted">Project Resource Utilization</h6>
-                <div style="height: 200px;"><canvas id="resUtilChart"></canvas></div>
-            </div>
-        </div>
-        <div class="col-md-7">
-            <div class="chart-container me-md-2 mb-2 mb-md-0">
-                <h6 class="text-muted">Weekly Logged-in Hours</h6>
-                <div style="height: 200px;"><canvas id="weeklyChart"></canvas></div>
+        <div class="col-md-6">
+            <div class="card chart-container h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title">Logged Hours Trend</h6>
+                    <div class="btn-group" role="group" aria-label="Toggle Chart View">
+                        <input type="radio" class="btn-check" name="chartView" id="dailyToggle" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="dailyToggle">Daily</label>
+                        <input type="radio" class="btn-check" name="chartView" id="weeklyToggle" autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="weeklyToggle">Weekly</label>
+                        <input type="radio" class="btn-check" name="chartView" id="monthlyToggle" autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="monthlyToggle">Monthly</label>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <div class="chart-wrapper">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+{% block scripts %}
+<script src="https://unpkg.com/htmx.org@1.9.2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    Chart.defaults.devicePixelRatio = window.devicePixelRatio;
-    const sharedOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: '#000',
-                titleColor: '#fff',
-                bodyColor: '#eee',
-                borderColor: '#ccc',
-                borderWidth: 1
+Chart.defaults.devicePixelRatio = window.devicePixelRatio;
+
+const sharedOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            backgroundColor: '#000',
+            titleColor: '#fff',
+            bodyColor: '#eee',
+            borderColor: '#ccc',
+            borderWidth: 1
+        }
+    },
+    scales: {
+        x: {
+            type: 'category',
+            grid: { display: false },
+            ticks: {
+                autoSkip: false,
+                maxRotation: 45,
+                minRotation: 0,
+                callback: function(value) {
+                    const label = this.getLabelForValue(value);
+                    return label.length > 15 ? label.match(/.{1,15}/g).join('\n') : label;
+                }
             }
         },
-        scales: {
-            x: {
-                type: 'category', // ✅ Fix: Ensure category axis for labels
-                grid: { display: false },
-                ticks: {
-                    autoSkip: false, // Prevent skipping
-                    maxRotation: 45,
-                    minRotation: 0,
-                    callback: function(value, index, ticks) {
-                        const label = this.getLabelForValue(value);
-                        return label.length > 15 ? label.match(/.{1,15}/g).join('\n') : label;
-                    }
-                }
+        y: {
+            beginAtZero: true,
+            grid: { display: false }
+        }
+    }
+};
+
+// ========== Combo Chart: Project Budget Utilization ==========
+new Chart(document.getElementById('comboBudgetUtilChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ project_labels_cost|safe }},
+        datasets: [
+            {
+                type: 'bar',
+                label: 'Budget',
+                data: {{ project_budget|safe }},
+                backgroundColor: '#76b7b2'
             },
+            {
+                type: 'bar',
+                label: 'Cost Spent',
+                data: {{ project_spent|safe }},
+                backgroundColor: '#edc949'
+            },
+            {
+                type: 'line',
+                label: '% Utilization',
+                data: {{ project_utilization_values|safe }},
+                borderColor: '#e15759',
+                backgroundColor: '#e15759',
+                yAxisID: 'y1'
+            }
+        ]
+    },
+    options: {
+        ...sharedOptions,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: {
             y: {
-                grid: { display: false },
-                ticks: {
-                    beginAtZero: true,
-                    callback: function(value) {
-                        return value;
-                    }
-                }
+                title: { display: true, text: 'Cost (₹)' }
+            },
+            y1: {
+                type: 'linear',
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Utilization (%)' },
+                ticks: { callback: value => value + '%' }
             }
         }
-    };
+    }
+});
 
-    const projectUtil = {
-        labels: {{ project_labels|safe }},
-        datasets: [{
-            label: '% Utilization',
-            data: {{ project_utilization|safe }},
-            backgroundColor: {{ project_colors|safe }},
-            borderRadius: 6
-        }]
-    };
-    console.log(projectUtil.labels);
-    const deptData = {
-        labels: {{ dept_cost_labels|safe }},
-        datasets: [{
-            data: {{ dept_cost_values|safe }},
-            backgroundColor: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949']
-        }]
-    };
 
-    const resUtilData = {
-        labels: {{ res_util_labels|safe }},
-        datasets: [{
-            label: '% Utilization',
-            data: {{ res_util_values|safe }},
-            backgroundColor: '#6a5acd',
-            borderRadius: 6
-        }]
-    };
+let comboUtilChart;
 
-    const weeklyData = {
-        labels: {{ weekly_labels|safe }},
-        datasets: [{
-            label: 'Hours Logged',
-            data: {{ weekly_values|safe }},
-            fill: true,
-            borderColor: '#20c997',
-            backgroundColor: 'rgba(32, 201, 151, 0.1)',
-            tension: 0.3,
-            pointBackgroundColor: '#20c997',
-            pointRadius: 4
-        }]
-    };
+function resizeCanvas(canvas) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
 
-    new Chart(document.getElementById('projectUtilChart'), {
+  // Get the display size of the canvas
+  const rect = canvas.getBoundingClientRect();
+
+  // Set the canvas size in actual pixels, accounting for device pixel ratio
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+
+  // Scale the context to match the new resolution
+  ctx.scale(dpr, dpr);
+}
+
+function createOrUpdateComboUtilChart(type, labels, allotted, worked, utilization) {
+    // const ctx = document.getElementById('comboUtilChart').getContext('2d');
+    const canvas = document.getElementById('comboUtilChart');
+    resizeCanvas(canvas);
+    const ctx = canvas.getContext('2d');
+
+    const config = {
         type: 'bar',
-        data: projectUtil,
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Allotted Hours',
+                    data: allotted,
+                    backgroundColor: '#f28e2c'
+                },
+                {
+                    type: 'bar',
+                    label: 'Worked Hours',
+                    data: worked,
+                    backgroundColor: '#4e79a7'
+                },
+                {
+                    type: 'line',
+                    label: 'Utilization (%)',
+                    data: utilization,
+                    borderColor: '#d62728',
+                    backgroundColor: '#d62728',
+                    yAxisID: 'y1',
+                    tension: 0.4,
+                    pointRadius: 4
+                }
+            ]
+        },
         options: {
-            ...sharedOptions,
-            indexAxis: 'y', // Horizontal bars
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
             scales: {
                 y: {
-                    grid: { display: false },
-                    ticks: {
-                        callback: function(value, index, ticks) {
-                            const label = this.getLabelForValue(value);
-                            return label.length > 15 ? label.match(/.{1,15}/g).join('\n') : label;
-                        }
-                    }
-                },
-                x: {
                     beginAtZero: true,
-                    grid: { display: false },
-                    min: 0,
-                    max: 100,
-                    ticks: {
-                        stepSize: 10,
-                        autoSkip: false,
-                        callback: function(value) {
-                            return value + '%'; // If values are decimals (0.3 → 30%)
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-
-
-    new Chart(document.getElementById('deptPieChart'), {
-        type: 'pie',
-        data: deptData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: {
-                    backgroundColor: '#000',
-                    titleColor: '#fff',
-                    bodyColor: '#eee'
-                }
-            }
-        }
-    });
-
-    new Chart(document.getElementById('resUtilChart'), {
-        type: 'bar',
-        data: resUtilData,
-        options: {
-            ...sharedOptions,
-            indexAxis: 'y', // Horizontal bars
-            scales: {
-                y: { // Labels are on the y-axis now
-                    grid: { display: false },
-                    ticks: {
-                        callback: function(value, index, ticks) {
-                            const label = this.getLabelForValue(value);
-                            return label.length > 15 ? label.match(/.{1,15}/g).join('\n') : label;
-                        }
-                    }
+                    title: { display: true, text: 'Hours' }
                 },
-                x: {
-                    grid: { display: false },
+                y1: {
                     beginAtZero: true,
-                    min: 0,
+                    type: 'linear',
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Utilization (%)' },
                     max: 100,
-                    ticks: {
-                        stepSize: 10,
-                        callback: function(value){
-                            return value + '%';
-                        }
-                    }
+                    ticks: { callback: value => value + '%' }
                 }
             }
         }
-    });
+    };
 
-    new Chart(document.getElementById('weeklyChart'), {
+    // Destroy existing chart if exists
+    if (comboUtilChart) {
+        comboUtilChart.destroy();
+    }
+
+    comboUtilChart = new Chart(ctx, config);
+}
+
+// ===== Preloaded Data from Django =====
+const projectLabels = {{ project_hours_labels|safe }};
+const projectAllotted = {{ project_hours_allotted|safe }};
+const projectWorked = {{ project_hours_worked|safe }};
+const projectUtil = {{ res_util_values|safe }};
+
+const taskLabels = {{ task_hours_labels|safe }};
+const taskAllotted = {{ task_hours_allotted|safe }};
+const taskWorked = {{ task_hours_worked|safe }};
+const taskUtil = {{ task_utilization_values|safe }};
+
+// ===== Initial Chart Load: Project =====
+createOrUpdateComboUtilChart('project', projectLabels, projectAllotted, projectWorked, projectUtil);
+
+// ===== Toggle Behavior =====
+document.getElementById('toggleProject').addEventListener('change', () => {
+    if (document.getElementById('toggleProject').checked) {
+        createOrUpdateComboUtilChart('project', projectLabels, projectAllotted, projectWorked, projectUtil);
+    }
+});
+
+document.getElementById('toggleTask').addEventListener('change', () => {
+    if (document.getElementById('toggleTask').checked) {
+        createOrUpdateComboUtilChart('task', taskLabels, taskAllotted, taskWorked, taskUtil);
+    }
+});
+
+
+// ========== Pie Chart: Billable vs Non-Billable ==========
+new Chart(document.getElementById('billableChart'), {
+    type: 'pie',
+    data: {
+        labels: ['Billable', 'Non-Billable'],
+        datasets: [{
+            data: [{{ billable_hours|safe }}, {{ non_billable_hours|safe }}],
+            backgroundColor: ['#59a14f', '#e15759']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'left' } }
+    }
+});
+
+
+const sharedOptions1 = {
+  // THIS is the fix
+    plugins: {
+        legend: { position: 'top' }
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Hours' }
+        }
+    }
+};
+
+
+// Create chart instance
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('trendChart');
+    if (!canvas) {
+        console.error('Canvas element with ID "trendChart" not found!');
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
+
+    const chartDataMap = {
+        daily: {
+            labels: {{ daily_labels|safe }},
+            data: {{ daily_values|safe }},
+            borderColor: '#20c997'
+        },
+        weekly: {
+            labels: {{ weekly_labels_trend|safe }},
+            data: {{ weekly_values_trend|safe }},
+            borderColor: '#6a5acd'
+        },
+        monthly: {
+            labels: {{ monthly_labels_trend|safe }},
+            data: {{ monthly_values_trend|safe }},
+            borderColor: '#d9534f'
+        }
+    };
+
+    let trendChart = new Chart(ctx, {
         type: 'line',
-        data: weeklyData,
-        options: {
-            ...sharedOptions,
-            scales: {
-                x: { grid: { display: false } },
-                y: { grid: { display: false } }
-            }
-        }
+        data: {
+            labels: chartDataMap.daily.labels,
+            datasets: [{
+                label: 'Hours Logged',
+                data: chartDataMap.daily.data,
+                fill: false,
+                borderColor: chartDataMap.daily.borderColor,
+                tension: 0.3,
+                pointBackgroundColor: chartDataMap.daily.borderColor,
+                pointRadius: 4
+            }]
+        },
+        options: sharedOptions
     });
+
+    function updateChart(viewType) {
+        const config = chartDataMap[viewType];
+        trendChart.data.labels = config.labels;
+        trendChart.data.datasets[0].data = config.data;
+        trendChart.data.datasets[0].borderColor = config.borderColor;
+        trendChart.data.datasets[0].pointBackgroundColor = config.borderColor;
+        trendChart.update();
+    }
+
+    document.getElementById('dailyToggle')?.addEventListener('change', () => updateChart('daily'));
+    document.getElementById('weeklyToggle')?.addEventListener('change', () => updateChart('weekly'));
+    document.getElementById('monthlyToggle')?.addEventListener('change', () => updateChart('monthly'));
+});
+
+
 </script>
 {% endblock %}
+
+
+    <!-- Employee Selector will use it specific chart -->
+        <!-- <div class="col-md-3">
+            <label for="employeeFilter" class="form-label">Employee</label>
+            <select name="employee" id="employeeFilter" class="form-select"
+                    onchange="document.getElementById('dashboardFilters').submit();">
+                <option value="">All Employees</option>
+                {% for emp in employees %}
+                    <option value="{{ emp.id }}" {% if request.GET.employee == emp.id|stringformat:"s" %}selected{% endif %}>
+                        {{ emp.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div> -->
