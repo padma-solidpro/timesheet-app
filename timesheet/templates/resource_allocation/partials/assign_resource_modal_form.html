@@ -1,105 +1,86 @@
 {% load custom_filters %}
-<div class="modal-header">
-  <h5 class="modal-title">Assign Resource</h5>
-  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-</div>
-<form method="POST" hx-post="{% url 'assign_resource' %}" hx-target="#allocationTable" hx-swap="outerHTML">
-  {% csrf_token %}
-  <input type="hidden" name="project_id" value="{{ project_id }}">
-  <input type="hidden" name="task_id" value="{{ task_id }}">
-  <input type="hidden" name="subtask_id" value="{{ subtask_id }}">
-  <input type="hidden" name="week_start_date" value="{{ week_start_date }}">
-  <div class="modal-body">
-    <input type="text" class="form-control mb-2" placeholder="Search Employee" onkeyup="filterTable(this)">
-    <select class="form-select mb-3" id="roleFilter">
-      <option value="">All Roles</option>
+
+  <div class="modal-header">
+    <h5 class="modal-title">Assign Resource</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+  <form method="POST" hx-post="{% url 'assign_resource' %}" hx-target="#allocationTable" hx-swap="outerHTML">
+    {% csrf_token %}
+    <input type="hidden" name="project_id" value="{{ project_id }}">
+    <input type="hidden" name="task_id" value="{{ task_id }}">
+    <input type="hidden" name="subtask_id" value="{{ subtask_id }}">
+    <input type="hidden" name="week_start_date" value="{{ week_start_date }}">
+    <div class="modal-body">
+      <input type="text" id="employeeSearch" class="form-control mb-2" placeholder="Search Employee">
+      <select class="form-select mb-3" id="roleFilter">
+        <option value="">All Roles</option>
         {% for role in roles %}
-             <option value="{{ role.name|lower }}">{{ role.name }}</option>
+          <option value="{{ role.name|lower }}">{{ role.name }}</option>
         {% endfor %}
-    </select>
-    <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+      </select>
+      <div class="table-container" style="max-height: 300px; overflow-y: auto;">
         <table class="table table-sm table-bordered table-striped">
-        <thead  class="table-light"><tr>
-            <th style="position: sticky; top: 0; background: white; z-index: 1;">Assign</th>
-            <th style="position: sticky; top: 0; background: white; z-index: 1;">Employee</th>
-            <th style="position: sticky; top: 0; background: white; z-index: 1;">Availability</th>
-            <th style="position: sticky; top: 0; background: white; z-index: 1;">Assigned Hours</th>
-            <th style="display: none;">Role</th>
-            </tr></thead>
-        <tbody>
+          <thead class="table-light">
+            <tr>
+              <th style="position: sticky; top: 0; background: white; z-index: 1;">Assign</th>
+              <th style="position: sticky; top: 0; background: white; z-index: 1;">Employee</th>
+              <th style="position: sticky; top: 0; background: white; z-index: 1;">Availability</th>
+              <th style="position: sticky; top: 0; background: white; z-index: 1;">Assigned Hours</th>
+              <th style="display: none;">Role</th>
+            </tr>
+          </thead>
+          <tbody id="resourceTableBody">
             {% for res in resources %}
-            <!-- <tr data-role="{{ res.role|lower }}"> -->
             <tr data-role="{{ res.role.name|default:''|lower }}">
-                <td><input type="checkbox" name="resource_ids" value="{{ res.id }}"></td>
-                <td>{{ res.name }}</td>
-                <td>{{ availability_map|get_item:res.id }} hrs</td>
-                <td><input type="number" name="assigned_hours" class="form-control form-control-sm" step="0.25"></td>
-                <td style="display: none;">{{ res.role.name|default:'' }}</td>
+              <td><input type="checkbox" name="resource_ids" value="{{ res.id }}"></td>
+              <td>{{ res.name }}</td>
+              <td>{{ availability_map|get_item:res.id }} hrs</td>
+              <td><input type="number" name="assigned_hours" class="form-control form-control-sm" step="0.25"></td>
+              <td style="display: none;">{{ res.role.name|default:'' }}</td>
             </tr>
             {% endfor %}
-        </tbody>
+          </tbody>
         </table>
+      </div>
     </div>
-  </div>
-  <div class="modal-footer">
-    <button type="submit" class="btn btn-success">Assign</button>
-  </div>
-</form>
+    <div class="modal-footer">
+      <button type="submit" class="btn btn-success">Assign</button>
+    </div>
+  </form>
 
-<style>
-.table-container {
-  max-height: 300px;
-  overflow-y: auto;
-}
+  <script>
+  (function() {
+    const modal = document.querySelector('#assignResourceModal');
+    if (!modal) return;
 
-.table thead th {
-  position: sticky;
-  top: 0;
-  background-color: white; /* Or match Bootstrap's thead color */
-  z-index: 1;
-}
-</style>
+    const searchInput = modal.querySelector("#employeeSearch");
+    const roleFilter = modal.querySelector("#roleFilter");
+    const tableRows = modal.querySelectorAll("#resourceTableBody tr");
 
-<script>
-function filterTable() {
-  const form = document.querySelector('form');
-  const searchInput = form.querySelector('input[placeholder="Search Employee"]');
-  const roleSelect = form.querySelector('#roleFilter');
+    if (!searchInput || !roleFilter) return;
 
-  const searchValue = searchInput.value.trim().toLowerCase();
-  const roleValue = roleSelect.value.trim().toLowerCase();
+    function filterTable() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const selectedRole = roleFilter.value;
 
-  const rows = form.querySelectorAll('tbody tr');
+      tableRows.forEach(row => {
+        const name = row.cells[1]?.textContent.toLowerCase();
+        const rowRole = row.dataset.role || "";
 
-  rows.forEach(row => {
-    const nameCell = row.cells[1];
-    const employeeName = nameCell ? nameCell.innerText.trim().toLowerCase() : '';
-    const roleCell = row.cells[4]; // Update index if you add/remove columns
-    const roleAttr = roleCell ? roleCell.innerText.trim().toLowerCase() : '';
+        const matchesSearch = name.includes(searchTerm);
+        const matchesRole = !selectedRole || rowRole === selectedRole;
 
-    const matchesSearch = employeeName.includes(searchValue);
-    const matchesRole = roleValue === '' || roleAttr === roleValue;
+        row.style.display = (matchesSearch && matchesRole) ? "" : "none";
+      });
+    }
 
-    row.style.display = (matchesSearch && matchesRole) ? '' : 'none';
-  });
-}
+    let debounce;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(filterTable, 150);
+    });
+    roleFilter.addEventListener("change", filterTable);
 
-
-// Attach event listeners on DOM load
-document.addEventListener('DOMContentLoaded', () => {
-  const searchBox = document.querySelector('input[placeholder="Search Employee"]');
-  const roleFilter = document.querySelector('#roleFilter');
-
-  if (searchBox) searchBox.addEventListener('input', filterTable);
-  if (roleFilter) roleFilter.addEventListener('change', filterTable);
-});
-
-// Close modal after HTMX request (if applicable)
-document.querySelector('form').addEventListener('htmx:afterRequest', function () {
-  const modalEl = document.querySelector('.modal.show');
-  if (modalEl) {
-    const modalInstance = bootstrap.Modal.getInstance(modalEl);
-    modalInstance.hide();
-  }
-});
+    filterTable();
+  })();
 </script>

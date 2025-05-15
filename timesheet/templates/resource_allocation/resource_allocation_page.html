@@ -31,3 +31,71 @@
   </div>
 </div>
 {% endblock %}
+
+
+<script>
+  (function () {
+    // We don't track filtersInitialized globally because modal content reloads every time
+
+    function initializeFilters(modal) {
+      console.log("Initializing modal filters...");
+
+      const searchInput = modal.querySelector("#employeeSearch");
+      const roleFilter = modal.querySelector("#roleFilter");
+      const tableRows = modal.querySelectorAll("#resourceTableBody tr");
+
+      if (!searchInput || !roleFilter) {
+        console.warn("Missing search or role filter input.");
+        return;
+      }
+
+      function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedRole = roleFilter.value;
+
+        tableRows.forEach(row => {
+          const name = row.cells[1]?.textContent.toLowerCase();
+          const rowRole = row.dataset.role || "";
+
+          const matchesSearch = name.includes(searchTerm);
+          const matchesRole = !selectedRole || rowRole === selectedRole;
+
+          row.style.display = (matchesSearch && matchesRole) ? "" : "none";
+        });
+      }
+
+      // Debounced search input
+      let debounce;
+      searchInput.addEventListener("input", () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(filterTable, 150);
+      });
+      roleFilter.addEventListener("change", filterTable);
+
+      // Initial filter run
+      filterTable();
+    }
+
+    // Listen for HTMX swaps to detect new modal content
+    document.body.addEventListener("htmx:afterSwap", (evt) => {
+      const modal = document.querySelector("#assignResourceModal");
+
+      if (modal && evt.detail.target.closest("#assignResourceModal")) {
+        console.log("Modal content swapped");
+
+        // Remove any previous shown.bs.modal listener to avoid duplicates
+        modal.removeEventListener("shown.bs.modal", onModalShown);
+
+        // Define handler here so we can remove it later
+        function onModalShown() {
+          console.log("Modal fully shown");
+          initializeFilters(modal);
+          modal.removeEventListener("shown.bs.modal", onModalShown);
+        }
+
+        // Attach the listener for when modal is fully shown
+        modal.addEventListener("shown.bs.modal", onModalShown);
+      }
+    });
+  })();
+</script>

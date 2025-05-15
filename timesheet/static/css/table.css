@@ -139,7 +139,7 @@ select.form-select-sm.me-2 {
    DataTables Specific Styles
 ====================================================== */
 #timesheetTabsContent {
-    height: 350px;
+    height: 450px;
     overflow-y: hidden;
 }
 

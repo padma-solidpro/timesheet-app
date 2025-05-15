@@ -242,7 +242,7 @@ def reports_view(request):
                     qs = qs.filter(resource=resource)
                 elif access_level == 3:
                     reporting_emp_ids = Resource.objects.filter(reporting_to=resource).values_list('id', flat=True)
-                    qs = qs.filter(resource_id__in=reporting_emp_ids)
+                    qs = qs.filter(Q(resource_id__in=reporting_emp_ids) | Q(resource=resource))
                     print("Reporting user log reports: ", qs)
                 # access_level == 4 => all records, no filtering
 
