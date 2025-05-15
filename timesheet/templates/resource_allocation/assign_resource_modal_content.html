@@ -1,0 +1,30 @@
+<div class="modal-header">
+  <h5 class="modal-title" id="assignResourceModalLabel">Assign Resource</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+  <form hx-post="{% url 'assign_resource' %}" hx-target="closest .list-group-item" hx-swap="outerHTML">
+    {% csrf_token %}
+    <input type="hidden" name="project_id" value="{{ project_id }}">
+    <input type="hidden" name="task_id" value="{{ task_id }}">
+    <input type="hidden" name="subtask_id" value="{{ subtask_id }}">
+
+    <div class="mb-3">
+      <label for="resourceSelect" class="form-label">Resource:</label>
+      <select class="form-select" id="resourceSelect" name="resource_id">
+        <option value="">-- Select Resource --</option>
+        {% for resource in resources %}
+          <option value="{{ resource.id }}">{{ resource.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="assignedHours" class="form-label">Assign Hours:</label>
+      <input type="number" class="form-control" id="assignedHours" name="assigned_hours" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+  </form>
+</div>

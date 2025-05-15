@@ -1,0 +1,40 @@
+{% load resource_allocation_filters %}
+<ul class="list-group">
+    {% for task_name, task_group in task_assignments|groupby_django:'task.name' %}
+        <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+                <strong>{{ task_name }}</strong>
+                <span>Total Allotted: {{ task_group|aggregate:'allotted_hours' }} hrs</span>
+            </div>
+            <ul class="list-group ms-3">
+                {% for subtask_assignment in task_group|dictsort:'subtask.name' %}
+                    {% include 'resource_allocation/subtask_allocations.html' with subtask_assignment=subtask_assignment project=project %}
+                {% endfor %}
+            </ul>
+        </li>
+    {% endfor %}
+</ul>
+
+<script>
+  // Initialize Bootstrap Modals after HTMX content load
+  document.addEventListener('DOMContentLoaded', () => {
+    const assignResourceModalElement = document.getElementById('assignResourceModal');
+    const assignResourceModal = new bootstrap.Modal(assignResourceModalElement);
+
+    document.addEventListener('htmx:afterSwap', (event) => {
+      if (event.target.id === 'allocationTableContainer') {
+        const assignButtons = document.querySelectorAll('.assign-resource-btn');
+        assignButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            const projectId = this.dataset.projectId;
+            const taskId = this.dataset.taskId;
+            const subtaskId = this.dataset.subtaskId;
+            const modalContentUrl = `/get-assign-resource-modal/${projectId}/${taskId}/${subtaskId}/`;
+            htmx.ajax('GET', modalContentUrl, '#assignResourceModalContent');
+            assignResourceModal.show();
+          });
+        });
+      }
+    });
+  });
+</script>

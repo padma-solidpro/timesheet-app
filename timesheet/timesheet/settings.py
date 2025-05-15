@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'crispy_forms',
     'taskmanager',
+    'resource_allocation'
 ]
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"  # Or another template pack you are using
 CRISPY_TEMPLATE_PACK = "bootstrap5"
