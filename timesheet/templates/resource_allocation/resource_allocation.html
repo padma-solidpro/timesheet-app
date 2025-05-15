@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  <h1>Resource Allocation</h1>
+
+    <div class="mb-3">
+        <label for="projectFilter" class="form-label">Select Project:</label>
+        <select class="form-select"
+                id="projectFilter"
+                name="project_id"
+                data-url="/resource_allocation/get-project-tasks/"
+                hx-trigger="change"
+                hx-target="#allocationTableContainer"
+                hx-swap="innerHTML"
+                onchange="
+                    const url = this.dataset.url + this.value + '/';
+                    this.setAttribute('hx-get', url);
+                    htmx.ajax('GET', url, {target: '#allocationTableContainer'});
+                ">
+            <option value="">-- Select Project --</option>
+            {% for project in projects %}
+                <option value="{{ project.id }}">{{ project.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+  <div id="allocationTableContainer">
+    {% if projects %}
+      <p>Select a project to view allocations.</p>
+    {% else %}
+      <p>No projects found led by you.</p>
+    {% endif %}
+  </div>
+
+  <div class="modal fade" id="assignResourceModal" tabindex="-1" aria-labelledby="assignResourceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" id="assignResourceModalContent">
+        </div>
+    </div>
+  </div>
+
+{% endblock %}

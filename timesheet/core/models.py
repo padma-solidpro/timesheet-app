@@ -250,3 +250,77 @@ class Timesheet(models.Model):
 
     def __str__(self):
         return f"{self.resource.name} - {self.project.name} ({self.date})"
+
+class Timesheet1(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Accepted', 'Accepted'),
+        ('Rejected', 'Rejected'),
+    ]
+
+    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
+    resource_allocation = models.ForeignKey(
+        'ResourceAllocation',
+        on_delete=models.CASCADE,
+        related_name='timesheet_entries'
+    )
+    date = models.DateField()
+    hours = models.DecimalField(max_digits=5, decimal_places=2)
+    task_description = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
+    reviewed_by = models.ForeignKey(
+        Resource,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='new_reviewed_entries'
+    )
+    review_comment = models.TextField(blank=True, null=True)
+    reviewed_on = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.resource.name} - {self.resource_allocation} ({self.date}): {self.hours} hours"
+
+
+# core/models.py
+
+
+class Holiday(models.Model):
+    name = models.CharField(max_length=100)
+    date = models.DateField(unique=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.date})"
+
+class ResourceAllocation(models.Model):
+    resource = models.ForeignKey(Resource, on_delete=models.CASCADE, related_name='resource_allocations')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='resource_allocations')
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='resource_allocations')
+    subtask = models.ForeignKey(SubTask, on_delete=models.CASCADE, related_name='resource_allocations')
+    week_start_date = models.DateField()
+    assigned_hours = models.DecimalField(max_digits=6, decimal_places=2)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('Active', 'Active'),
+            ('Completed', 'Completed'),
+            ('Cancelled', 'Cancelled'),
+        ],
+        default='Active'
+    )
+    assigned_by = models.ForeignKey(
+        Resource,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='allocations_assigned'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('resource', 'project', 'task', 'subtask', 'week_start_date')
+
+    def __str__(self):
+        return f"{self.resource.name} - {self.project.name} - {self.task.name} - {self.subtask.name} ({self.week_start_date}): {self.assigned_hours} hours"

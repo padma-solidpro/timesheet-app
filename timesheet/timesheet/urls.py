@@ -19,6 +19,7 @@ from django.urls import path, include
 from accounts.views import login_view 
 from dashboard.views import dashboard_view
 from resources.views import resources_view
+from resource_allocation.views import resource_allocation_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -35,5 +36,6 @@ urlpatterns = [
     path('projects/', include('projects.urls')),
     path('resources/', include('resources.urls')),
     path('taskmanager/', include('taskmanager.urls')),
+    path('resource_allocation/', include('resource_allocation.urls')),
     
 ]
