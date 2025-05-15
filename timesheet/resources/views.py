@@ -8,11 +8,19 @@ from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 
 ROLE_HIERARCHY = {
-    'Software Engineer': 'Project Lead',
-    'Software Engineer Trainee': 'Project Lead',
-    'Senior Software Engineer': 'Project Lead',
     'Project Lead': 'Delivery Lead',
     'Delivery Lead': 'Department Head',
+    'Software Engineer Trainee': 'Project Lead',
+    'ESG Data Analyst Intern': 'Project Lead',
+    'Intern - Software Engineer': 'Project Lead',
+    'Software Engineer': 'Project Lead',
+    'Senior Software Engineer': 'Project Lead',
+    'Senior Automation Engineer': 'Project Lead',
+    'Data Analyst': 'Project Lead',
+    'Automation Engineer': 'Project Lead',
+    'System Analyst': 'Project Lead',
+    'Junior Automation Engineer': 'Project Lead',
+    'Lead UI/UX Developer': 'Project Lead',
 }
 
 ALLOWED_LOGIN_ROLES = ['Project Lead', 'Delivery Lead', 'Department Head']
