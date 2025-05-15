@@ -1,0 +1,84 @@
+{% load custom_filters %}
+<table class="table table-bordered allocation_table">
+    <thead class="table-secondary">
+        <tr>
+            <th>Task / Subtask / Resource</th>
+            <th>Availability</th>
+            <th>Assigned Hours</th>
+            <th>Remaining Hours</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+        <!-- Task Row -->
+        <tr class="task-row table-primary">
+            <td colspan="5">
+                <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target=".task-{{ task.id }}">
+                    {{ task.name }}
+                </button>
+            </td>
+        </tr>
+
+        {% for subtask in subtasks %}
+            {% if subtask.task_id == task.id %}
+            <!-- Subtask Row -->
+            <tr class="collapse show task-{{ task.id }} subtask-row table-light">
+                <td style="padding-left: 2rem;">{{ subtask.name }}</td>
+                <td></td>
+                <td>{{ allocations|get_allocation_hours:subtask.id }}</td>
+                <td></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary"
+                        hx-get="{% url 'load_assign_resource_form' selected_project_id task.id subtask.id %}"
+                        hx-target="#assignResourceModalContent"
+                        hx-trigger="click"
+                        data-bs-toggle="modal"
+                        data-bs-target="#assignResourceModal">
+                        +Assign Resource
+                    </button>
+                </td>
+            </tr>
+
+            <!-- Allocation Rows -->
+            {% for alloc in allocations %}
+                {% if alloc.subtask_id == subtask.id %}
+                <tr class="collapse show task-{{ task.id }} resource-row">
+                    <td style="padding-left: 4rem;">{{ alloc.resource.name }}</td>
+                    <td>{{ availability_map|get_item:alloc.resource_id }}</td>
+                    <td>{{ alloc.assigned_hours }}</td>
+                    <td>{{ alloc.assigned_hours|get_remaining_hours:alloc }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger"
+                            hx-delete="{% url 'delete_assignment' alloc.id %}"
+                            hx-target="closest tr" hx-swap="outerHTML">
+                            🗑
+                        </button>
+                    </td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+            {% endif %}
+        {% endfor %}
+        {% endfor %}
+    </tbody>
+</table>
+<style>
+.allocation_table tbody tr.task-row td:first-child {
+    padding-left: 1rem !important; /* 8px */
+    font-weight: bold;
+    text-align: left;
+}
+
+.allocation_table tbody tr.subtask-row td:first-child {
+    padding-left: 3.5rem !important; /* 32px */
+    font-weight: normal;
+        text-align: left;
+}
+
+.allocation_table tbody tr.resource-row td:first-child {
+    padding-left: 5.5rem !important; /* 56px */
+    font-style: italic;
+    text-align: left;
+}
+</style>

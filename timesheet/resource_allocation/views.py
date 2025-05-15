@@ -1,81 +1,98 @@
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from core.models import Project, Resource, ProjectTaskAssignment, ResourceAllocation
+from django.shortcuts import render, get_object_or_404, redirect
+from core.models import Project, Task, SubTask, ResourceAllocation, Resource, ProjectTaskAssignment, Role
 from django.db.models import Sum
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from datetime import date, timedelta
-from django.http import JsonResponse  # Still useful for modal content
+from django.http import JsonResponse
+from django.db import connection
+from datetime import datetime
 
-@login_required
-def resource_allocation_view(request):
+def resource_allocation_page(request):
     user = request.user
     resource = Resource.objects.get(user=user)
     projects = Project.objects.filter(project_lead=resource)
-    return render(request, 'resource_allocation/resource_allocation.html', {'projects': projects})
 
-def get_project_tasks_subtasks(request, project_id):
-    project = get_object_or_404(Project, id=project_id)
-    task_assignments = ProjectTaskAssignment.objects.filter(project=project).order_by('task__name', 'subtask__name')
-    context = {'project': project, 'task_assignments': task_assignments}
-    return render(request, 'resource_allocation/allocation_table.html', context)
+    project_id = request.GET.get('project')
+    selected_project = Project.objects.filter(id=project_id).first() if project_id else None
 
-def get_assign_resource_modal(request, project_id, task_id, subtask_id):
-    project = get_object_or_404(Project, id=project_id)
-    task = get_object_or_404(Task, id=task_id)
-    subtask = get_object_or_404(SubTask, id=subtask_id)
-    resources = Resource.objects.all()  # You might want to filter this based on roles, etc.
-    context = {'project_id': project_id, 'task_id': task_id, 'subtask_id': subtask_id, 'resources': resources}
-    return render(request, 'resource_allocation/assign_resource_modal_content.html', context)
+    pta_qs = ProjectTaskAssignment.objects.filter(project=selected_project) if selected_project else ProjectTaskAssignment.objects.none()
+
+    tasks = Task.objects.filter(id__in=pta_qs.values_list('task_id', flat=True).distinct())
+    subtasks = SubTask.objects.filter(id__in=pta_qs.values_list('subtask_id', flat=True).exclude(subtask_id__isnull=True).distinct())
+
+    allocations = ResourceAllocation.objects.filter(project=selected_project).select_related('resource', 'task', 'subtask')
+
+    # Fetch availability from materialized view
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT resource_id, available_hours FROM resource_availability1_mv")
+        availability_map = {row[0]: row[1] for row in cursor.fetchall()}
+
+    context = {
+        'projects': projects,
+        'selected_project_id': project_id,
+        'tasks': tasks,
+        'subtasks': subtasks,
+        'allocations': allocations,
+        'availability_map': availability_map,
+    }
+    if request.headers.get('HX-Request') == 'true':
+        return render(request, 'resource_allocation/partials/tree_table.html', context)
+
+    return render(request, 'resource_allocation/resource_allocation_page.html', context)
+
+def load_assign_resource_form(request, project_id, task_id, subtask_id):
+    # resources = Resource.objects.all()
+    resources = Resource.objects.select_related('role').exclude(role__isnull=True)
+
+    # roles = Resource.objects.values_list('role__name', flat=True).distinct()
+    roles = Role.objects.filter(id__in=Resource.objects.exclude(role=None).values_list('role_id', flat=True)).distinct()
+
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT resource_id, available_hours FROM resource_availability1_mv")
+        availability_map = {row[0]: row[1] for row in cursor.fetchall()}
+
+    week_start_date = request.GET.get('week_start_date') or datetime.today().date()
+
+    return render(request, 'resource_allocation/partials/assign_resource_modal_form.html', {
+        'project_id': project_id,
+        'task_id': task_id,
+        'subtask_id': subtask_id,
+        'resources': resources,
+        'availability_map': availability_map,
+        'roles': roles, 
+        'week_start_date': week_start_date,
+    })
 
 def assign_resource(request):
     if request.method == 'POST':
+        resource_ids = request.POST.getlist('resource_ids')
+        hours_list = request.POST.getlist('assigned_hours')
         project_id = request.POST.get('project_id')
         task_id = request.POST.get('task_id')
         subtask_id = request.POST.get('subtask_id')
-        resource_id = request.POST.get('resource_id')
-        assigned_hours = request.POST.get('assigned_hours')
+        week_start_str  = request.POST.get('week_start_date')
+        week_start_date = datetime.strptime(week_start_str, '%B %d, %Y').date()
 
-        project = get_object_or_404(Project, id=project_id)
-        task = get_object_or_404(Task, id=task_id)
-        subtask = get_object_or_404(SubTask, id=subtask_id)
-        resource = get_object_or_404(Resource, id=resource_id)
 
-        assigning_user = request.user
-        assigned_by_resource = Resource.objects.get(user=assigning_user)
+        assigned_by = Resource.objects.filter(user=request.user).first()
 
-        ResourceAllocation.objects.create(
-            project=project,
-            task=task,
-            subtask=subtask,
-            resource=resource,
-            assigned_hours=assigned_hours,
-            week_start_date=date.today() - timedelta(days=date.today().weekday()),
-            assigned_by=assigned_by_resource
-        )
+        for res_id, hrs in zip(resource_ids, hours_list):
+            ResourceAllocation.objects.create(
+                resource_id=res_id,
+                project_id=project_id,
+                task_id=task_id,
+                subtask_id=subtask_id,
+                week_start_date=week_start_date,
+                assigned_hours=hrs,
+                assigned_by=assigned_by,
+            )
+        # return redirect('resource_allocation')
+        allocations = ResourceAllocation.objects.filter(project_id=project_id)
+        html = render_to_string('resource_allocation/partials/allocation_table.html', {
+            'allocations': allocations
+        }, request=request)
 
-        # Render the updated subtask row
-        task_assignment = get_object_or_404(ProjectTaskAssignment, project=project, task=task, subtask=subtask)
-        allocations = ResourceAllocation.objects.filter(project=project, task=task, subtask=subtask)
-        context = {'subtask_assignment': task_assignment, 'allocations': allocations, 'project': project}
-        return render(request, 'resource_allocation/subtask_allocations.html', context)
-    return HttpResponse("Error assigning resource.", status=400)
+        return HttpResponse(html)
 
-def remove_resource_allocation(request):
-    if request.method == 'POST':
-        allocation_id = request.POST.get('allocation_id')
-        try:
-            allocation = ResourceAllocation.objects.get(id=allocation_id)
-            project = allocation.project
-            task = allocation.task
-            subtask = allocation.subtask
-            allocation.delete()
-
-            # Render the updated subtask row
-            task_assignment = get_object_or_404(ProjectTaskAssignment, project=project, task=task, subtask=subtask)
-            allocations = ResourceAllocation.objects.filter(project=project, task=task, subtask=subtask)
-            context = {'subtask_assignment': task_assignment, 'allocations': allocations, 'project': project}
-            return render(request, 'resource_allocation/subtask_allocations.html', context)
-        except ResourceAllocation.DoesNotExist:
-            return HttpResponse("Allocation not found.", status=404)
-    return HttpResponse("Error removing allocation.", status=400)
+def delete_assignment(request, allocation_id):
+    allocation = get_object_or_404(ResourceAllocation, id=allocation_id)
+    allocation.delete()
+    return JsonResponse({'success': True})

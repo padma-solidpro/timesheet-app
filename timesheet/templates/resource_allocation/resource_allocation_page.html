@@ -1,0 +1,33 @@
+<!-- Overview of the Resource Allocation Page -->
+<!-- File: templates/resource_allocation_page.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Resource Allocation</h2>
+
+    <div class="mb-3">
+        <label for="projectFilter" class="form-label">Select Project</label>
+        <select class="form-select" id="projectFilter" name="project" hx-get="{% url 'resource_allocation' %}" hx-target="#allocationTable" hx-trigger="change">
+            <option value="">-- Select Project --</option>
+            {% for project in projects %}
+                <option value="{{ project.id }}" {% if project.id|stringformat:"s" == selected_project_id %}selected{% endif %}>{{ project.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="allocationTable">
+        {% include 'resource_allocation/partials/tree_table.html' %}
+    </div>
+</div>
+
+<!-- Assign Resource Modal -->
+<div class="modal fade" id="assignResourceModal" tabindex="-1" aria-labelledby="assignResourceLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" id="assignResourceModalContent">
+      <!-- Dynamic content loaded via HTMX -->
+    </div>
+  </div>
+</div>
+{% endblock %}
